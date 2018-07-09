@@ -1,0 +1,30 @@
+List of changes from previous version:
+
+1. Added v1.21 error messages to ErrMessageBox function.
+
+2. Added long file name support.
+
+3. Changed file find dialog box to use multiple threads in order
+   to allow the user to select and open a file without waiting for
+   the search to end.
+
+4. Added help button to find file dialog box.
+
+5. Find file function will now search for files that meet one of
+   a comma-separated list of search criteria. For example, the
+   search pattern *c,*.h will locate all files with a .c or .h extension.
+
+6. Hard-error processing is now disabled while FileOpenDlg and
+   FileSaveDlg are executing. On exit from these functions, hard-error
+   processing is enabled.
+
+7. Scroll-bar buttons are now located at each end of the current
+   directory name display in order to allow the user to view
+   the full name of the current directory.
+
+8. Horizontal scroll bars have been added to the file name and
+   directory name list boxes in order to allow the display of long
+   file names.
+
+9. This version of filedlg.dll and errmsg.dll requires OS/2 v1.2
+   or higher.

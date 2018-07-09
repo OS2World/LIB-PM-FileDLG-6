@@ -1,0 +1,504 @@
+.context File open/save dialog boxes
+.context h.contents
+.list
+FileOpenDlg         Displays the file open dialog box.
+FileSaveDlg         Displays the file save dialog box.
+.context FileOpenDlg
+.ref FileSaveDlg,DosOpen,DosQSysInfo,DosError
+#define INCL_DOSFILEMGR
+#include <os2.h>
+#include <filedlg.h>
+
+.paste Syntax
+USHORT \bFileOpenDlg\p( \ihwndOwnder\p,\ipszTitle\p,\ipszIns\p,\ipszShowSpec\p,\iusShowAttr\p,
+                    \ipfnHelpProc\p,\ipszFile\p,\iphf\p,\iulFileSize\p,\ipusAction\p,
+                    \iusAttribute\p,\ifsOpeFlags\p,\ifsOpenMode\p,\iulReserved\p )
+HWND \ihwndOwner\p;         /* owner window handle                          */
+PSZ \ipszTitle\p;           /* dialog box title                             */
+PSZ \ipszIns\p;             /* dialog box instructions                      */
+PSZ \ipszShowSpec\p;        /* initial show file specification              */
+USHORT \iusShowAttr\p;      /* attribute of files to be shown               */
+void (EXPENTRY *\ipfnHelpProc\p)(HWND \ihDlg\p); /* help function               */
+PSZ \ipszFile\p;            /* pointer to file opened                       */
+PHFILE \iphf\p;             /* pointer to variable for file handle          */
+ULONG \iulFileSize\p;       /* file size if created or truncated            */
+PUSHORT \ipusAction\p;      /* pointer to variable for action taken         */
+USHORT \iusAttribute\p;     /* file attribute                               */
+USHORT \ifsOpenFlags\p;     /* action taken if file exists/does not exist   */
+USHORT \ifsOpenMode\p;      /* open mode of file                            */
+ULONG \iulReserved\p;       /* must be zero                                 */
+.end
+
+The \bFileOpenDlg\p function displays a dialog box and opens the file selected
+by the user. This function returns a handle that can be used to read from
+and write to the file, as well as to retrieve information about the file.
+
+\bParameters   Description\p
+컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴
+\ihwndOwner\p    Identifies the owner window.
+
+\ipszTitle\p     Points to the null-terminated string that specifies the
+             dialog box title. If \ipszTitle\p is NULL then the default value
+             "Open File" is used.
+
+\ipszIns\p       Points to the null-terminated string that specifies the
+             dialog box instructions. If \ipszIns\p is NULL then the default
+             value "Select file or type filename" is used.
+
+\ipszShowSpec\p  Points the the null-terminated string that specifies the
+             initial search specifications for the files that are to
+             be listed in the file list box.
+
+\iusShowAttr\p   Specifies the attribute(s) of the files that are to be
+             listed in the file list box. This parameter can be a
+             combination of the following values
+
+             \bValue          Meaning\p
+             컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
+             \iFILE_NORMAL\p    List all normal files.
+
+             \iFILE_READONLY\p  List read-only files.
+
+             \iFILE_HIDDEN\p    List hidden files.
+
+             \iFILE_SYSTEM\p    List system files.
+
+             \iFILE_ARCHIVED\p  List archived files.
+
+\ipfnHelpProc\p  Points to the user supplied help procedure. This procedure
+             is called whenever the help button or the F1 key is pressed.
+             The HelpProc function is defined as follows:
+
+             void EXPENTRY HelpProc( HWND hDlg )
+             The hDlg parameter is a handle to the open file dialog box.
+
+             When the help procedure is called, the identity of the
+             dialog box that requested the help can be determined
+             by a call to WinQueryWindowUShort(hDlg,QWS_ID). The
+             value returned can be one of the following:
+
+                \iFDLG_OPEN\p ..... Help requested by open dialog box.
+                \iFDLG_FIND\p ..... Help requested by find file dialog box.
+                \iFDLG_SAVE\p ..... Help requested by save file dialog box.
+
+             If no help is available, set the \ipfnHelpProc\p parameter to
+             NULL. This will cause the Help button to be removed from
+             the dialog box.
+
+\ipszFileName\p  Points to the location where the fully qualified filename of
+             the file selected by the user is to be stored. Use the
+             \bDosQSysInfo\p function to get the maximum path length in order
+             to determine how large to make the memory block pointed to
+             by \ipszFile\p.
+
+\iphf\p          Points to the variable that receives the handle of the opened
+             file.
+
+\ipusAction\p    Points to the variable receiving the value that specifies the
+             action taken by the FileOpenDlg function. If the dialog box is
+             cancelled then this value has no meaning. Otherwise, it is
+             one of the following values:
+
+             \bValue           Meaning\p
+             컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
+             \iFILE_CREATED\p    File was created.
+
+             \iFILE_EXISTED\p    File already existed.
+
+             \iFILE_TRUNCATED\p  File existed and was truncated.
+
+\iulFileSize\p   Specifies the file's new size (in bytes). This parameter
+             applies only if the file is created or truncated. The size
+             specification has no effect on a file that is opened only for
+             reading.
+
+\iusAttribute\p  Specifies the file attributes. This parameter can be a
+             combination of the following values:
+
+             \bValue          Meaning\p
+             컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
+             \iFILE_NORMAL\p    File can be read from or written to.
+
+             \iFILE_READONLY\p  File can be read from, but not written to.
+
+             \iFILE_HIDDEN\p    File is hidden and does not appear in a
+                            directory listing.
+
+             \iFILE_SYSTEM\p    File is a system file.
+
+             \iFILE_ARCHIVED\p  File has been archived.
+
+             File attributes apply only if the file is created.
+
+\ifsOpenFlags\p  Specifies the action to take both when the file exists and when
+             it does not exist. This parameter may be one of the following
+             values:
+
+             \bValue                        Meaning\p
+             컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
+             \iFILE_CREATE\p                  Create a new file; fail if the
+                                          file already exists.
+
+             \iFILE_OPEN\p                    Open an existing file; fail if the
+                                          file does not exist.
+
+             \iFILE_OPEN | FILE_CREATE\p      Open an existing file or create
+                                          the file if it does not exist.
+
+             \iFILE_TRUNCATE\p                Open an existing file and change
+                                          to a given size.
+
+             \iFILE_TRUNCATE | FILE_CREATE\p  Open an existing file and truncate
+                                          it, or create the file if it does
+                                          not exist.
+
+\ifsOpenMode\p   Specifies the modes with which to open the file. It consists of
+             one access mode and one share mode. The other values are
+             optional and can be given in any combination:
+
+             \bValue                     Meaning\p
+             컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
+             \iOPEN_ACCESS_READONLY\p      Data may be read from the file but
+                                       not written to it.
+
+             \iOPEN_ACCESS_READWRITE\p     Data may be read from or written to
+                                       the file.
+
+             \iOPEN_ACCESS_WRITEONLY\p     Data may be written to the file but
+                                       not read from it.
+
+             \iOPEN_SHARE_DENYNONE\p       Other processes can open the file for
+                                       any access: read-only, write-only, or
+                                       read-write.
+
+             \iOPEN_SHARE_DENYREAD\p       Other processes can open the file for
+                                       write-only access but they cannot
+                                       open it for read-only or read-write
+                                       access.
+
+             \iOPEN_SHARE_DENYREADWRITE\p  The current process has exclusive
+                                       access to the file. The file cannot
+                                       be opened by any process (including
+                                       the current process).
+
+             \iOPEN_SHARE_DENYWRITE\p      Other processes can open the file for
+                                       read-only access but they cannot open
+                                       it for write-only or read-write
+                                       access.
+
+             \iOPEN_FLAGS_FAIL_ON_ERROR\p  Any function that uses the file
+                                       handle returns immediately with an
+                                       error value if there is an I/O
+                                       error--for example, when the drive
+                                       door is open or a sector is missing.
+                                       If this value is not specified, the
+                                       system passes the error to the system
+                                       critical-error handler, which then
+                                       reports the error to the user with a
+                                       hard-error popup. The fail-on-error
+                                       flag is not inherited by child
+                                       processes.
+
+                                       The fail-on-error flag applies to all
+                                       functions that use the file handle,
+                                       with the exception of the
+                                       DosDevIOCtl function.
+
+             \iOPEN_FLAGS_NOINHERIT\p      The file handle is not available to
+                                       any child process started by the
+                                       current process. If this value is not
+                                       specified, any child process started
+                                       by the current process may use the
+                                       file handle.
+
+             \iOPEN_FLAGS_WRITE_THROUGH\p  This flag applies to functions, such
+                                       as DosWrite, that write data to the
+                                       file. If this value is specified, the
+                                       system writes data to the device
+                                       before the given function returns.
+                                       Otherwise, the system may store the
+                                       data in an internal file buffer and
+                                       write the data to the device only
+                                       when the buffer is full or the file
+                                       is closed.
+
+             \iOPEN_FLAGS_NO_LOCALITY\p       There is no specific information
+                                          regarding the locality of
+                                          reference (the degree of
+                                          randomness with which the file is
+                                          accessed).
+
+             \iOPEN_FLAGS_SEQUENTIAL\p        The file is accessed
+                                          sequentially.
+
+             \iOPEN_FLAGS_RANDOM\p            The file is accessed randomly.
+
+             \iOPEN_FLAGS_RANDOMSEQUENTIAL\p  The file is accessed randomly, but
+                                          that there is a degree of
+                                          sequential I/O within that random
+                                          access. For example, this flag is
+                                          specified if large blocks of data
+                                          are to be read or written at
+                                          random locations in the file.
+
+             \iOPEN_FLAGS_NO_CACHE\p          The disk drive should not cache
+                                          data in I/O operations on this
+                                          file.
+\iulReserved\p   Specifies a reserved value; must be zero.
+
+\bReturn Value\p
+
+The return value may be one of the following:
+
+    FDLG_OK
+    FDLG_CANCEL
+
+\bComments\p
+
+On exit from this function, hard-error processing will be enabled.
+
+
+\bSee Also\p
+
+    \bFileSaveDlg\p, \bDosOpen\p, \bDosQSysInfo\p, \bDosError\p
+.context FileSaveDlg
+.ref FileOpenDlg,DosOpen,DosQSysInfo,DosError
+#define INCL_DOSFILEMGR
+#include <os2.h>
+#include <filedlg.h>
+
+.paste Syntax
+USHORT FileSaveDlg( hwndOwner,pszTitle,pszIns,pfnHelpProc,pszDefault,
+                    pszFile,phf,ulFileSize,pusAction,usAttribute,
+                    fsOpenFlags,fsOpenMode,ulReserved )
+HWND \ihwndOwner\p;         /* owner window handle                          */
+PSZ \ipszTitle\p;           /* dialog box title                             */
+PSZ \ipszIns\p;             /* dialog box instructions                      */
+void (EXPENTRY *\ipfnHelpProc\p)(HWND \ihDlg\p); /* help function               */
+PSZ \ipszDefault\p;         /* default file name                            */
+PSZ \ipszFile\p;            /* pointer to file opened                       */
+PHFILE \iphf\p;             /* pointer to variable for file handle          */
+ULONG \iulFileSize\p;       /* file size if created or truncated            */
+PUSHORT \ipusAction\p;      /* pointer to variable for action taken         */
+USHORT \iusAttribute\p;     /* file attribute                               */
+USHORT \ifsOpenFlags\p;     /* action taken if file exists/does not exist   */
+USHORT \ifsOpenMode\p;      /* open mode of file                            */
+ULONG \iulReserved\p;       /* must be zero                                 */
+.end
+
+The \bFileSaveDlg\p function displays a dialog box and opens the file selected
+by the user. This function returns a handle that can be used to read from
+and write to the file, as well as to retrieve information about the file.
+
+Parameters   Description
+컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴
+\ihwndOwner\p    Identifies the owner window.
+
+\ipszTitle\p     Points to the null-terminated string that specifies the
+             dialog box title. If \ipszTitle\p is NULL then the default value
+             "Save File" is used.
+
+\ipszIns\p       Points to the null-terminated string that specifies the
+             dialog box instructions. If \ipszIns\p is NULL then the default
+             value "Type filename" is used.
+
+\ipfnHelpProc\p  Points to the user supplied help procedure. This procedure
+             is called whenever the help button or the F1 key is pressed.
+             The HelpProc function is defined as follows:
+
+             void EXPENTRY HelpProc( HWND hDlg )
+             The hDlg parameter is a handle to the save file dialog box.
+
+             When the help procedure is called, the identity of the
+             dialog box that requested the help can be determined
+             by a call to WinQueryWindowUShort(hDlg,QWS_ID). The
+             value returned can be one of the following:
+
+                \iFDLG_OPEN\p ..... Help requested by open dialog box.
+                \iFDLG_FIND\p ..... Help requested by find file dialog box.
+                \iFDLG_SAVE\p ..... Help requested by save file dialog box.
+
+             If no help is available, set the \ipfnHelpProc\p parameter to
+             NULL. This will cause the Help button to be removed from
+             the dialog box.
+
+\ipszDefault\p   Points to the null-terminated string that specifies the
+             default save file name.
+
+\ipszFileName\p  Points to the location where the fully qualified filename of
+             the file selected by the user is to be stored. Use the
+             \bDosQSysInfo\p function to get the maximum path length in order
+             to determine how large to make the memory block pointed to
+             by \ipszFile\p.
+
+\iphf\p          Points to the variable that receives the handle of the opened
+             file.
+
+\ipusAction\p    Points to the variable receiving the value that specifies the
+             action taken by the FileOpenDlg function. If the dialog box is
+             cancelled then this value has no meaning. Otherwise, it is
+             one of the following values:
+
+             \bValue           Meaning\p
+             컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
+             \iFILE_CREATED\p    File was created.
+
+             \iFILE_EXISTED\p    File already existed.
+
+             \iFILE_TRUNCATED\p  File existed and was truncated.
+
+\iulFileSize\p   Specifies the file's new size (in bytes). This parameter
+             applies only if the file is created or truncated. The size
+             specification has no effect on a file that is opened only for
+             reading.
+
+\iusAttribute\p  Specifies the file attributes. This parameter can be a
+             combination of the following values:
+
+             \bValue          Meaning\p
+             컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
+             \iFILE_NORMAL\p    File can be read from or written to.
+
+             \iFILE_READONLY\p  File can be read from, but not written to.
+
+             \iFILE_HIDDEN\p    File is hidden and does not appear in a
+                            directory listing.
+
+             \iFILE_SYSTEM\p    File is a system file.
+
+             \iFILE_ARCHIVED\p  File has been archived.
+
+             File attributes apply only if the file is created.
+
+\ifsOpenFlags\p  Specifies the action to take both when the file exists and when
+             it does not exist. This parameter may be one of the following
+             values:
+
+             \bValue                        Meaning\p
+             컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
+             \iFILE_CREATE\p                  Create a new file; fail if the
+                                          file already exists.
+
+             \iFILE_OPEN\p                    Open an existing file; fail if the
+                                          file does not exist.
+
+             \iFILE_OPEN | FILE_CREATE\p      Open an existing file or create
+                                          the file if it does not exist.
+
+             \iFILE_TRUNCATE\p                Open an existing file and change
+                                          to a given size.
+
+             \iFILE_TRUNCATE | FILE_CREATE\p  Open an existing file and truncate
+                                          it, or create the file if it does
+                                          not exist.
+
+\ifsOpenMode\p   Specifies the modes with which to open the file. It consists of
+             one access mode and one share mode. The other values are
+             optional and can be given in any combination:
+
+             \bValue                     Meaning\p
+             컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
+             \iOPEN_ACCESS_READONLY\p      Data may be read from the file but
+                                       not written to it.
+
+             \iOPEN_ACCESS_READWRITE\p     Data may be read from or written to
+                                       the file.
+
+             \iOPEN_ACCESS_WRITEONLY\p     Data may be written to the file but
+                                       not read from it.
+
+             \iOPEN_SHARE_DENYNONE\p       Other processes can open the file for
+                                       any access: read-only, write-only, or
+                                       read-write.
+
+             \iOPEN_SHARE_DENYREAD\p       Other processes can open the file for
+                                       write-only access but they cannot
+                                       open it for read-only or read-write
+                                       access.
+
+             \iOPEN_SHARE_DENYREADWRITE\p  The current process has exclusive
+                                       access to the file. The file cannot
+                                       be opened by any process (including
+                                       the current process).
+
+             \iOPEN_SHARE_DENYWRITE\p      Other processes can open the file for
+                                       read-only access but they cannot open
+                                       it for write-only or read-write
+                                       access.
+
+             \iOPEN_FLAGS_FAIL_ON_ERROR\p  Any function that uses the file
+                                       handle returns immediately with an
+                                       error value if there is an I/O
+                                       error--for example, when the drive
+                                       door is open or a sector is missing.
+                                       If this value is not specified, the
+                                       system passes the error to the system
+                                       critical-error handler, which then
+                                       reports the error to the user with a
+                                       hard-error popup. The fail-on-error
+                                       flag is not inherited by child
+                                       processes.
+
+                                       The fail-on-error flag applies to all
+                                       functions that use the file handle,
+                                       with the exception of the
+                                       DosDevIOCtl function.
+
+             \iOPEN_FLAGS_NOINHERIT\p      The file handle is not available to
+                                       any child process started by the
+                                       current process. If this value is not
+                                       specified, any child process started
+                                       by the current process may use the
+                                       file handle.
+
+             \iOPEN_FLAGS_WRITE_THROUGH\p  This flag applies to functions, such
+                                       as DosWrite, that write data to the
+                                       file. If this value is specified, the
+                                       system writes data to the device
+                                       before the given function returns.
+                                       Otherwise, the system may store the
+                                       data in an internal file buffer and
+                                       write the data to the device only
+                                       when the buffer is full or the file
+                                       is closed.
+
+             \iOPEN_FLAGS_NO_LOCALITY\p       There is no specific information
+                                          regarding the locality of
+                                          reference (the degree of
+                                          randomness with which the file is
+                                          accessed).
+
+             \iOPEN_FLAGS_SEQUENTIAL\p        The file is accessed
+                                          sequentially.
+
+             \iOPEN_FLAGS_RANDOM\p            The file is accessed randomly.
+
+             \iOPEN_FLAGS_RANDOMSEQUENTIAL\p  The file is accessed randomly, but
+                                          that there is a degree of
+                                          sequential I/O within that random
+                                          access. For example, this flag is
+                                          specified if large blocks of data
+                                          are to be read or written at
+                                          random locations in the file.
+
+             \iOPEN_FLAGS_NO_CACHE\p          The disk drive should not cache
+                                          data in I/O operations on this
+                                          file.
+
+\iulReserved\p   Specifies a reserved value; must be zero.
+
+\bReturn Value\p
+
+The return value may be one of the following:
+
+    FDLG_OK
+    FDLG_CANCEL
+
+\bComments\p
+
+On exit from this function, hard-error processing will be enabled.
+
+
+\bSee Also\p
+
+    \bFileOpenDlg\p, \bDosOpen\p, \bDosQSysInfo\p, \bDosError\p

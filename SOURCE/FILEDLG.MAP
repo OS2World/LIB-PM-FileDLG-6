@@ -1,0 +1,442 @@
+
+ FILEDLG
+
+ Start     Length     Name                   Class
+ 0001:0000 0125CH     OPENDLG_TEXT           CODE
+ 0002:0000 01646H     FINDDLG_TEXT           CODE
+ 0003:0000 00916H     SAVEDLG_TEXT           CODE
+ 0004:0000 0050CH     TOOLS_TEXT             CODE
+ 0005:0000 00C35H     _TEXT                  CODE
+ 0006:0000 00000H     C_ETEXT                ENDCODE
+ 0006:0000 0016AH     STATICDATA             FAR_DATA
+ 0006:016A 00000H     STATICDATA_CONST       FAR_DATA
+ 0006:016A 00000H     STATICDATA_BSS         FAR_DATA
+ 0007:0000 00100H     THREADDATA             THREADDATASEG
+ 0008:0000 00850H     LOCKS                  LOCKSEG
+ 0009:0000 00042H     NULL                   BEGDATA
+ 0009:0042 0037CH     _DATA                  DATA
+ 0009:03BE 0000EH     CDATA                  DATA
+ 0009:03CC 00000H     XIFB                   DATA
+ 0009:03CC 00000H     XIF                    DATA
+ 0009:03CC 00000H     XIFE                   DATA
+ 0009:03CC 00000H     XIB                    DATA
+ 0009:03CC 00000H     XI                     DATA
+ 0009:03CC 00000H     XIE                    DATA
+ 0009:03CC 00000H     XPB                    DATA
+ 0009:03CC 00000H     XP                     DATA
+ 0009:03CC 00000H     XPE                    DATA
+ 0009:03CC 00000H     XCB                    DATA
+ 0009:03CC 00000H     XC                     DATA
+ 0009:03CC 00000H     XCE                    DATA
+ 0009:03CC 00000H     XCFB                   DATA
+ 0009:03CC 00000H     XCF                    DATA
+ 0009:03CC 00000H     XCFE                   DATA
+ 0009:03CC 00004H     CONST                  CONST
+ 0009:03D0 00008H     HDR                    MSG
+ 0009:03D8 0013AH     MSG                    MSG
+ 0009:0512 00002H     PAD                    MSG
+ 0009:0514 00001H     EPAD                   MSG
+ 0009:0516 00000H     _BSS                   BSS
+ 0009:0516 00000H     XOB                    BSS
+ 0009:0516 00000H     XO                     BSS
+ 0009:0516 00000H     XOE                    BSS
+ 0009:0520 00000H     STACK                  STACK
+
+ Origin   Group
+ 0009:0   DGROUP
+ 0008:0   LOCKGRP
+ 0007:0   THREADDATAGRP
+ 0006:0   STATICDATA_GROUP
+
+ Address   Export                  Alias
+
+ 0001:0000 FILEOPENDLG             FILEOPENDLG
+ 0003:0000 FILESAVEDLG             FILESAVEDLG
+
+  Address         Publics by Name
+
+ 0005:0010       C_INIT
+ 0000:0000  Imp  DOSALLOCSEG          (DOSCALLS.34)
+ 0000:0000  Imp  DOSCHDIR             (DOSCALLS.57)
+ 0000:0000  Imp  DOSCLOSE             (DOSCALLS.59)
+ 0000:0000  Imp  DOSCREATETHREAD      (DOSCALLS.145)
+ 0000:0000  Imp  DOSENTERCRITSEC      (DOSCALLS.3)
+ 0000:0000  Imp  DOSERROR             (DOSCALLS.120)
+ 0000:0000  Imp  DOSEXIT              (DOSCALLS.5)
+ 0000:0000  Imp  DOSEXITCRITSEC       (DOSCALLS.6)
+ 0000:0000  Imp  DOSEXITLIST          (DOSCALLS.7)
+ 0000:0000  Imp  DOSFINDCLOSE         (DOSCALLS.63)
+ 0000:0000  Imp  DOSFINDFIRST         (DOSCALLS.64)
+ 0000:0000  Imp  DOSFINDNEXT          (DOSCALLS.65)
+ 0000:0000  Imp  DOSFREESEG           (DOSCALLS.39)
+ 0000:0000  Imp  DOSGETENV            (DOSCALLS.91)
+ 0000:0000  Imp  DOSGETINFOSEG        (DOSCALLS.8)
+ 0000:0000  Imp  DOSGETMODHANDLE      (DOSCALLS.47)
+ 0000:0000  Imp  DOSGETVERSION        (DOSCALLS.92)
+ 0000:0000  Imp  DOSOPEN              (DOSCALLS.70)
+ 0000:0000  Imp  DOSQCURDIR           (DOSCALLS.71)
+ 0000:0000  Imp  DOSQCURDISK          (DOSCALLS.72)
+ 0000:0000  Imp  DOSQFILEMODE         (DOSCALLS.75)
+ 0000:0000  Imp  DOSQHANDTYPE         (DOSCALLS.77)
+ 0000:0000  Imp  DOSQPATHINFO         (DOSCALLS.98)
+ 0000:0000  Imp  DOSQSYSINFO          (DOSCALLS.166)
+ 0000:0000  Imp  DOSREALLOCSEG        (DOSCALLS.38)
+ 0000:0000  Imp  DOSSELECTDISK        (DOSCALLS.81)
+ 0000:0000  Imp  DOSSEMCLEAR          (DOSCALLS.141)
+ 0000:0000  Imp  DOSSEMREQUEST        (DOSCALLS.140)
+ 0000:0000  Imp  DOSSEMSET            (DOSCALLS.143)
+ 0000:0000  Imp  DOSSEMWAIT           (DOSCALLS.142)
+ 0000:0000  Imp  DOSSETVEC            (DOSCALLS.89)
+ 0000:0000  Imp  DOSSUSPENDTHREAD     (DOSCALLS.27)
+ 0000:0000  Imp  DOSWRITE             (DOSCALLS.138)
+ 0001:0000       FILEOPENDLG
+ 0003:0000       FILESAVEDLG
+ 0000:0000  Imp  GPIBOX               (PMGPI.131)
+ 0000:0000  Imp  GPIDELETEBITMAP      (PMGPI.197)
+ 0000:0000  Imp  GPIMOVE              (PMGPI.128)
+ 0000:0000  Imp  GPIQUERYBITMAPPARAMETERS (PMGPI.202)
+ 0000:0000  Imp  GPISETCOLOR          (PMGPI.108)
+ 0000:0000  Imp  WINALARM             (PMWIN.138)
+ 0000:0000  Imp  WINDEFDLGPROC        (PMWIN.179)
+ 0000:0000  Imp  WINDESTROYWINDOW     (PMWIN.7)
+ 0000:0000  Imp  WINDISMISSDLG        (PMWIN.126)
+ 0000:0000  Imp  WINDLGBOX            (PMWIN.125)
+ 0000:0000  Imp  WINDRAWBITMAP        (PMWIN.268)
+ 0000:0000  Imp  WINENABLEWINDOW      (PMWIN.11)
+ 0000:0000  Imp  WINGETSYSBITMAP      (PMWIN.97)
+ 0000:0000  Imp  WINPOSTMSG           (PMWIN.69)
+ 0000:0000  Imp  WINQUERYDLGITEMTEXT  (PMWIN.135)
+ 0000:0000  Imp  WINQUERYDLGITEMTEXTLENGTH (PMWIN.294)
+ 0000:0000  Imp  WINQUERYFOCUS        (PMWIN.78)
+ 0000:0000  Imp  WINQUERYWINDOWULONG  (PMWIN.31)
+ 0000:0000  Imp  WINSENDDLGITEMMSG    (PMWIN.127)
+ 0000:0000  Imp  WINSETDLGITEMTEXT    (PMWIN.134)
+ 0000:0000  Imp  WINSETFOCUS          (PMWIN.77)
+ 0000:0000  Imp  WINSETWINDOWTEXT     (PMWIN.16)
+ 0000:0000  Imp  WINSETWINDOWULONG    (PMWIN.30)
+ 0000:0000  Imp  WINWINDOWFROMID      (PMWIN.19)
+ 0005:0BFA       _access
+ 0006:0168       _appMsgCount
+ 0006:0138       _appMsgList
+ 0005:0A24       _calloc
+ 0009:0516       _edata
+ 0009:0520       _end
+ 0009:0295       _environ
+ 0000:0000  Imp  _ErrMessageBox       (ERRMSG.1)
+ 0005:0194       _exit
+ 0002:0000       _FINDDLGPROC
+ 0005:04F2       _free
+ 0005:04F7       _free_lk
+ 0004:02A6       _LeftArrow
+ 0005:04E8       _malloc
+ 0005:04ED       _malloc_lk
+ 0001:0420       _OPENDLGPROC
+ 0004:0000       _ParseFileName
+ 0004:03DA       _RightArrow
+ 0003:03E6       _SAVEDLGPROC
+ 0009:0520       _stackbottom
+ 0005:0A52       _strchr
+ 0005:0A80       _strcmpi
+ 0005:0A80       _stricmp
+ 0005:07A6       _strncmp
+ 0005:0AF4       _strpbrk
+ 0005:0AC6       _strrchr
+ 0005:0B52       _strtok
+ 0006:0058       _szDefOpenIns
+ 0006:004E       _szDefOpenTitle
+ 0006:0016       _szDefSaveIns
+ 0006:000C       _szDefSaveTitle
+ 0006:0136       _szDelimiters
+ 0006:0004       _szDLLName
+ 0006:009E       _szFilesFnd
+ 0006:0100       _szIllegalSearch
+ 0006:008C       _szListBoxFull
+ 0006:0026       _szOverwriteMsg
+ 0006:00CE       _szSearchCancelled
+ 0006:00C0       _szSearching
+ 0006:00E0       _szSearchThreadError
+ 0006:0076       _szSearchTitle
+ 0006:0000       _szSlash
+ 0006:0002       _szStarDotStar
+ 0006:0046       _szUnnamed
+ 0006:0088       _szWildCardChars
+ 0009:0068       __acfinfo
+ 0009:0046       __acmdln
+ 0000:9876  Abs  __acrtmsg
+ 0000:9876  Abs  __acrtused
+ 0000:D6D6  Abs  __aDBdoswp
+ 0009:02A4       __adbgmsg
+ 0000:D6D6  Abs  __aDBused
+ 0009:0048       __aenvseg
+ 0009:02B6       __amblksiz
+ 0005:0081       __amsg_exit
+ 0009:0078       __aseghi
+ 0009:0076       __aseglo
+ 0009:0052       __asizds
+ 0009:0050       __atopsp
+ 0005:089C       __beginthread
+ 0005:01A3       __cexit
+ 0009:029D       __child
+ 0005:00E2       __cinit
+ 0005:0270       __ctermsub
+ 0009:02B8       __ctype
+ 0009:02B8       __ctype_
+ 0005:01AD       __c_exit
+ 0009:008C       __dosmode
+ 0005:048D       __dosret
+ 0005:0474       __dosretf
+ 0009:008A       __dosvermajor
+ 0009:008B       __dosverminor
+ 0005:097D       __endthread
+ 0005:04DC       __errno
+ 0005:019B       __exit
+ 0009:029F       __exitdone
+ 0009:02A1       __exit_tid
+ 0009:007E       __fac
+ 0005:04FC       __ffree
+ 0005:04FC       __ffree_lk
+ 0005:0292       __FF_MSGBANNER
+ 0009:02A8       __fheap
+ 0005:0754       __findlast
+ 0005:050F       __fmalloc
+ 0005:052E       __fmalloc_lk
+ 0009:03C0       __fpinit
+ 0005:02B4       __fptrap
+ 0005:09AA       __gettidtab
+ 0009:004A       __ginfoseg
+ 0005:0692       __growseg
+ 0005:0721       __incseg
+ 0005:013C       __initfp
+ 0005:05AC       __initseg
+ 0009:004E       __linfoseg
+ 0005:05E0       __linkseg
+ 0005:0832       __lock
+ 0009:03BA       __lockcnt
+ 0005:0203       __lockexit
+ 0005:087C       __lockf
+ 0005:07FA       __lock_file
+ 0005:07E2       __lock_stream
+ 0005:0774       __newseg
+ 0009:008D       __nfile
+ 0009:0054       __nheap_desc
+ 0005:03C2       __NMSG_TEXT
+ 0005:03F2       __NMSG_WRITE
+ 0009:008F       __osfile
+ 0009:008A       __osmajor
+ 0009:008B       __osminor
+ 0009:008C       __osmode
+ 0009:008A       __osversion
+ 0009:0299       __pgmptr
+ 0009:018F       __pipech
+ 0005:0616       __searchseg
+ 0005:02BA       __setenvp
+ 0005:0270       __termfp
+ 0009:004C       __threadid
+ 0009:03BC       __tidtabmax
+ 0009:0088       __umaskval
+ 0005:085C       __unlock
+ 0005:024D       __unlockexit
+ 0005:088C       __unlockf
+ 0005:0806       __unlock_file
+ 0005:07EE       __unlock_stream
+ 0005:0812       __waitlock
+ 0009:007C       ___aDBrterr
+ 0009:007A       ___aDBswpflg
+ 0009:028F       ___argc
+ 0009:0291       ___argv
+ 0005:04D4       ___doserrno
+
+  Address         Publics by Value
+
+ 0000:0000  Imp  GPIDELETEBITMAP      (PMGPI.197)
+ 0000:0000  Imp  GPISETCOLOR          (PMGPI.108)
+ 0000:0000  Imp  WINQUERYFOCUS        (PMWIN.78)
+ 0000:0000  Imp  DOSSUSPENDTHREAD     (DOSCALLS.27)
+ 0000:0000  Imp  GPIBOX               (PMGPI.131)
+ 0000:0000  Imp  DOSFREESEG           (DOSCALLS.39)
+ 0000:0000  Imp  DOSSEMSET            (DOSCALLS.143)
+ 0000:0000  Imp  DOSALLOCSEG          (DOSCALLS.34)
+ 0000:0000  Imp  DOSCHDIR             (DOSCALLS.57)
+ 0000:0000  Imp  DOSGETVERSION        (DOSCALLS.92)
+ 0000:0000  Imp  DOSSETVEC            (DOSCALLS.89)
+ 0000:0000  Imp  WINQUERYWINDOWULONG  (PMWIN.31)
+ 0000:0000  Imp  DOSGETENV            (DOSCALLS.91)
+ 0000:0000  Imp  DOSEXITCRITSEC       (DOSCALLS.6)
+ 0000:0000  Imp  DOSCLOSE             (DOSCALLS.59)
+ 0000:0000  Imp  DOSGETMODHANDLE      (DOSCALLS.47)
+ 0000:0000  Imp  DOSSELECTDISK        (DOSCALLS.81)
+ 0000:0000  Imp  DOSQCURDISK          (DOSCALLS.72)
+ 0000:0000  Imp  DOSFINDNEXT          (DOSCALLS.65)
+ 0000:0000  Imp  DOSSEMCLEAR          (DOSCALLS.141)
+ 0000:0000  Imp  DOSERROR             (DOSCALLS.120)
+ 0000:0000  Imp  DOSOPEN              (DOSCALLS.70)
+ 0000:0000  Imp  DOSENTERCRITSEC      (DOSCALLS.3)
+ 0000:0000  Imp  WINDISMISSDLG        (PMWIN.126)
+ 0000:0000  Imp  WINSETFOCUS          (PMWIN.77)
+ 0000:0000  Imp  GPIQUERYBITMAPPARAMETERS (PMGPI.202)
+ 0000:0000  Imp  DOSQHANDTYPE         (DOSCALLS.77)
+ 0000:0000  Imp  WINSETWINDOWULONG    (PMWIN.30)
+ 0000:0000  Imp  WINENABLEWINDOW      (PMWIN.11)
+ 0000:0000  Imp  WINDEFDLGPROC        (PMWIN.179)
+ 0000:0000  Imp  WINPOSTMSG           (PMWIN.69)
+ 0000:0000  Imp  DOSWRITE             (DOSCALLS.138)
+ 0000:0000  Imp  GPIMOVE              (PMGPI.128)
+ 0000:0000  Imp  WINGETSYSBITMAP      (PMWIN.97)
+ 0000:0000  Imp  DOSFINDCLOSE         (DOSCALLS.63)
+ 0000:0000  Imp  DOSREALLOCSEG        (DOSCALLS.38)
+ 0000:0000  Imp  DOSQPATHINFO         (DOSCALLS.98)
+ 0000:0000  Imp  DOSQFILEMODE         (DOSCALLS.75)
+ 0000:0000  Imp  WINSENDDLGITEMMSG    (PMWIN.127)
+ 0000:0000  Imp  DOSEXIT              (DOSCALLS.5)
+ 0000:0000  Imp  DOSQCURDIR           (DOSCALLS.71)
+ 0000:0000  Imp  DOSEXITLIST          (DOSCALLS.7)
+ 0000:0000  Imp  DOSGETINFOSEG        (DOSCALLS.8)
+ 0000:0000  Imp  _ErrMessageBox       (ERRMSG.1)
+ 0000:0000  Imp  WINQUERYDLGITEMTEXTLENGTH (PMWIN.294)
+ 0000:0000  Imp  DOSCREATETHREAD      (DOSCALLS.145)
+ 0000:0000  Imp  WINALARM             (PMWIN.138)
+ 0000:0000  Imp  WINWINDOWFROMID      (PMWIN.19)
+ 0000:0000  Imp  WINDRAWBITMAP        (PMWIN.268)
+ 0000:0000  Imp  WINDESTROYWINDOW     (PMWIN.7)
+ 0000:0000  Imp  WINSETDLGITEMTEXT    (PMWIN.134)
+ 0000:0000  Imp  WINQUERYDLGITEMTEXT  (PMWIN.135)
+ 0000:0000  Imp  DOSFINDFIRST         (DOSCALLS.64)
+ 0000:0000  Imp  WINDLGBOX            (PMWIN.125)
+ 0000:0000  Imp  DOSSEMWAIT           (DOSCALLS.142)
+ 0000:0000  Imp  DOSQSYSINFO          (DOSCALLS.166)
+ 0000:0000  Imp  WINSETWINDOWTEXT     (PMWIN.16)
+ 0000:0000  Imp  DOSSEMREQUEST        (DOSCALLS.140)
+ 0000:9876  Abs  __acrtused
+ 0000:9876  Abs  __acrtmsg
+ 0000:D6D6  Abs  __aDBdoswp
+ 0000:D6D6  Abs  __aDBused
+ 0001:0000       FILEOPENDLG
+ 0001:0420       _OPENDLGPROC
+ 0002:0000       _FINDDLGPROC
+ 0003:0000       FILESAVEDLG
+ 0003:03E6       _SAVEDLGPROC
+ 0004:0000       _ParseFileName
+ 0004:02A6       _LeftArrow
+ 0004:03DA       _RightArrow
+ 0005:0010       C_INIT
+ 0005:0081       __amsg_exit
+ 0005:00E2       __cinit
+ 0005:013C       __initfp
+ 0005:0194       _exit
+ 0005:019B       __exit
+ 0005:01A3       __cexit
+ 0005:01AD       __c_exit
+ 0005:0203       __lockexit
+ 0005:024D       __unlockexit
+ 0005:0270       __termfp
+ 0005:0270       __ctermsub
+ 0005:0292       __FF_MSGBANNER
+ 0005:02B4       __fptrap
+ 0005:02BA       __setenvp
+ 0005:03C2       __NMSG_TEXT
+ 0005:03F2       __NMSG_WRITE
+ 0005:0474       __dosretf
+ 0005:048D       __dosret
+ 0005:04D4       ___doserrno
+ 0005:04DC       __errno
+ 0005:04E8       _malloc
+ 0005:04ED       _malloc_lk
+ 0005:04F2       _free
+ 0005:04F7       _free_lk
+ 0005:04FC       __ffree
+ 0005:04FC       __ffree_lk
+ 0005:050F       __fmalloc
+ 0005:052E       __fmalloc_lk
+ 0005:05AC       __initseg
+ 0005:05E0       __linkseg
+ 0005:0616       __searchseg
+ 0005:0692       __growseg
+ 0005:0721       __incseg
+ 0005:0754       __findlast
+ 0005:0774       __newseg
+ 0005:07A6       _strncmp
+ 0005:07E2       __lock_stream
+ 0005:07EE       __unlock_stream
+ 0005:07FA       __lock_file
+ 0005:0806       __unlock_file
+ 0005:0812       __waitlock
+ 0005:0832       __lock
+ 0005:085C       __unlock
+ 0005:087C       __lockf
+ 0005:088C       __unlockf
+ 0005:089C       __beginthread
+ 0005:097D       __endthread
+ 0005:09AA       __gettidtab
+ 0005:0A24       _calloc
+ 0005:0A52       _strchr
+ 0005:0A80       _strcmpi
+ 0005:0A80       _stricmp
+ 0005:0AC6       _strrchr
+ 0005:0AF4       _strpbrk
+ 0005:0B52       _strtok
+ 0005:0BFA       _access
+ 0006:0000       _szSlash
+ 0006:0002       _szStarDotStar
+ 0006:0004       _szDLLName
+ 0006:000C       _szDefSaveTitle
+ 0006:0016       _szDefSaveIns
+ 0006:0026       _szOverwriteMsg
+ 0006:0046       _szUnnamed
+ 0006:004E       _szDefOpenTitle
+ 0006:0058       _szDefOpenIns
+ 0006:0076       _szSearchTitle
+ 0006:0088       _szWildCardChars
+ 0006:008C       _szListBoxFull
+ 0006:009E       _szFilesFnd
+ 0006:00C0       _szSearching
+ 0006:00CE       _szSearchCancelled
+ 0006:00E0       _szSearchThreadError
+ 0006:0100       _szIllegalSearch
+ 0006:0136       _szDelimiters
+ 0006:0138       _appMsgList
+ 0006:0168       _appMsgCount
+ 0009:0046       __acmdln
+ 0009:0048       __aenvseg
+ 0009:004A       __ginfoseg
+ 0009:004C       __threadid
+ 0009:004E       __linfoseg
+ 0009:0050       __atopsp
+ 0009:0052       __asizds
+ 0009:0054       __nheap_desc
+ 0009:0068       __acfinfo
+ 0009:0076       __aseglo
+ 0009:0078       __aseghi
+ 0009:007A       ___aDBswpflg
+ 0009:007C       ___aDBrterr
+ 0009:007E       __fac
+ 0009:0088       __umaskval
+ 0009:008A       __osmajor
+ 0009:008A       __osversion
+ 0009:008A       __dosvermajor
+ 0009:008B       __osminor
+ 0009:008B       __dosverminor
+ 0009:008C       __dosmode
+ 0009:008C       __osmode
+ 0009:008D       __nfile
+ 0009:008F       __osfile
+ 0009:018F       __pipech
+ 0009:028F       ___argc
+ 0009:0291       ___argv
+ 0009:0295       _environ
+ 0009:0299       __pgmptr
+ 0009:029D       __child
+ 0009:029F       __exitdone
+ 0009:02A1       __exit_tid
+ 0009:02A4       __adbgmsg
+ 0009:02A8       __fheap
+ 0009:02B6       __amblksiz
+ 0009:02B8       __ctype
+ 0009:02B8       __ctype_
+ 0009:03BA       __lockcnt
+ 0009:03BC       __tidtabmax
+ 0009:03C0       __fpinit
+ 0009:0516       _edata
+ 0009:0520       _stackbottom
+ 0009:0520       _end
+
+Program entry point at 0005:0010

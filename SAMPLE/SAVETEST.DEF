@@ -1,0 +1,5 @@
+NAME savetest WINDOWAPI NEWFILES
+DESCRIPTION 'Program to test save file dialog box.'
+PROTMODE
+STACKSIZE 8192
+HEAPSIZE  1024

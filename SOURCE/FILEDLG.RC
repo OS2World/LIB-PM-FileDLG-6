@@ -1,0 +1,12 @@
+/****************************************************************************
+ * FILEDLG.RC -- Open/save file dialog box resource file                    *
+ *                                                                          *
+ * Modifications -                                                          *
+ *      22-Aug-1989 : Initial version.                                      *
+ *                                                                          *
+ * (c)Copyright 1989 Rick Yoder                                             *
+ ****************************************************************************/
+
+#include <os2.h>
+#include "dialog.h"
+rcinclude dialog.dlg

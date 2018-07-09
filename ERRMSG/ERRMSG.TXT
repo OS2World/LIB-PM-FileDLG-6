@@ -1,0 +1,207 @@
+.context List Categories
+.list
+Standard error handler
+.context Standard error handler
+.list
+ErrMessageBox   Standard PM error message function.
+ERRORMSG        Record structure used in a user defined error message list.
+.context ERRORMSG
+.context PERRORMSG
+.ref ErrMessageBox
+#define INCL_WINDIALOGS
+#include <os2.h>
+#include <errmsg.h>
+
+typedef struct {
+    USHORT  usCode;         // error code
+    USHORT  flStyle;        // message box style (see explanation below)
+    PSZ     pszMsg;         // ptr to error message text
+    } ERRORMSG;
+
+typedef ERRORMSG FAR * PERRORMSG;
+
+The \bERRORMSG\p structure defines the record structure used in a user defined
+error message list used by the \bErrMessageBox\p function.
+
+\bParameters  Description\p
+컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴
+\busCode\p      Error code.
+
+\bflStyle\p     Specifies the type of message-box window created. This parameter
+            consists of a button flag, an icon flag, a default button flag,
+            and any number of special flags. The following four lists
+            describe the available flags which can be combined using the OR
+            operator together for this parameter:
+
+            \bButtons              Meaning\p
+            컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴
+            \iMB_ABORTRETRYIGNORE\p  Message box contains Abort, Retry, and
+                                 Ignore push buttons.
+
+            \iMB_ENTER\p             Message box contains an Enter push button.
+
+            \iMB_ENTERCANCEL\p       Message box contains Enter and Cancel push
+                                 buttons.
+
+            \iMB_OK\p                Message box contains an OK push button.
+
+            \iMB_OKCANCEL\p          Message box contains OK and Cancel push
+                                 buttons.
+
+            \iMB_RETRYCANCEL\p       Message box contains Retry and Cancel push
+                                 buttons.
+
+            \iMB_YESNO\p             Message box contains Yes and No push
+                                 buttons.
+
+            \iMB_YESNOCANCEL\p       Message box contains Yes, No, and Cancel
+                                 push buttons.
+
+            \bIcon                Meaning\p
+            컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴
+            \iMB_ICONASTERISK\p     Message box contains asterisk icon.
+
+            \iMB_ICONEXCLAMATION\p  Message box contains exclamation-point
+                                icon.
+
+            \iMB_ICONHAND\p         Message box contains hand icon.
+
+            \iMB_ICONQUESTION\p     Message box contains question-mark icon.
+
+            \iMB_NOICON\p           Message box does not contain an icon.
+
+            \bDefault button  Meaning\p
+            컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴
+            \iMB_DEFBUTTON1\p   First button is the default (first button is
+                            always the default unless MB_DEFBUTTON2 or
+                            MB_DEFBUTTON3 is specified).
+
+            \iMB_DEFBUTTON2\p   Second button is the default.
+
+            \iMB_DEFBUTTON3\p   Third button is the default.
+
+            \bSpecial flags   Meaning\p
+            컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴
+            \iMB_APPLMODAL\p    Message box is application modal.
+
+            \iMB_SYSTEMMODAL\p  Message box is system modal.
+
+            \iMB_HELP\p         Message box contains Help push button.
+
+            \iMB_MOVEABLE\p     Message box is movable.
+
+\bpszMsg\p      Points to the error message text.
+
+
+\bSee Also\p
+
+    \bErrMessageBox\p
+.context ErrMessageBox
+.ref ERRORMSG,PERRORMSG,WinMessageBox,WinFlashWindow,WM_HELP
+#define INCL_WINDIALOGS
+#include <os2.h>
+#include <errmsg.h>
+
+.paste Syntax
+USHORT \bErrMessageBox\p( \ihwndOwner\p,\ipszCaption\p,\iusErrorCode\p,
+                      \iperrormsg\p,\icErrMsgCnt\p,[argument]... )
+HWND \ihwndOwner\p;         /* owner window handle                          */
+PSZ \ipszCaption\p;         /* message box window title                     */
+USHORT \iusErrorCode\p;     /* error code                                   */
+PERRORMSG \iperrormsg\p;    /* pointer to user defined error list           */
+USHORT \icErrMsgCnt\p;      /* number of items in user defined error list   */
+.end
+
+The \bErrMessageBox\p function creates, displays, and operates a message-box
+window that displays the error message associated with a given error
+code.
+
+\bParameters  Description\p
+컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴
+\ihwndOwner\p   Identifies the owner window of the message-box window. The owner
+            window is activated when ErrMessageBox returns.
+
+\ipszCaption\p  Points to the title of the message-box window. If this parameter
+            is NULL, "Error" (the default title) is displayed. The maximum
+            length of the text is device-dependent. If the text is too long,
+            it will be clipped.
+
+\iusErrorCode\p Contains the error code.
+
+\iperrormsg\p   Points to the user defined error message list. If this
+            parameter is NULL then the error message list appropriate
+            to the error code will be used (SysErrMsg or PMErrMsg).
+
+            The following error message lists are predefined:
+
+                SysErrMsg    : system error messages for error codes
+                               less that 0x1000 or above or equal to
+                               0x8000.
+
+                PMErrMsg     : PM error messages for error codes between
+                               0x1000 and 0x8000.
+
+                HlpMgrErrors : Help manager error messages.
+
+\icErrMsgCnt\p  Contains the number of items in the user defined error message
+            list. This parameter is ignored if perrormsg is NULL.
+
+\iargument\p    Optional list of arguments that are passed to the
+            vsprintf function in order to allow error messages to have
+            variable contents. NOTE THAT THIS FUNCTION REQUIRES THAT ALL
+            POINTER ARGUMENTS (SUCH AS POINTERS TO STRINGS) MUST BE FAR
+            POINTERS.
+
+\bReturn Value\p
+
+The return value indicates the user's response to the message. It can be one
+of the following vlaues:
+
+    \bValue        Meaning\p
+    컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴
+    \iMBID_ABORT\p   Abort button was selected.
+
+    \iMBID_CANCEL\p  Cancel button was selected.
+
+    \iMBID_ENTER\p   Enter button was selected.
+
+    \iMBID_IGNORE\p  Ignore button was selected.
+
+    \iMBID_NO\p      No button was selected.
+
+    \iMBID_OK\p      OK button was selected.
+
+    \iMBID_RETRY\p   Retry button was selected.
+
+    \iMBID_YES\p     Yes button was selected.
+
+    \iMDID_ERROR\p   The WinMessageBox function failed--an error occurred.
+
+If a message box has a Cancel button, MBID_CANCEL is returned if the ESCAPE
+key is pressed or if the Cancel button is selected. If the message box has
+no Cancel button, pressing the ESCAPE key has no effect.
+
+\bComments\p
+
+If a message-box window is created as part of the processing of a dialog
+window, the dialog window should be made the owner of the message-box
+window.
+
+If a system modal message-box window is created to tell the user that the
+system is running out of memory, the strings passed into this function
+should not be taken from a resource file because an attempt to load the
+resource file may fail due to lack of memory. Such a message-box window can
+safely use the hand icon (MB_ICONHAND), however, because this icon is always
+memory-resident.
+
+If the message box contains a help pushbutton, the message box window
+identifier will be set to the error code value.
+
+The total length of the error message string after it has been formatted
+and stored by vsprintf must not exceed 512 characters (including the
+terminating NULL character).
+
+
+See Also
+
+    \bERRORMSG\p, \bWinMessageBox\p, \bWinFlashWindow\p, \bWM_HELP\p

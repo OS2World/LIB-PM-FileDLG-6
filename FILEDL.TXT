@@ -1,0 +1,303 @@
+
+
+16.3 The FOLEDLG Example Program
+
+The example program FILEDLG creates a file dialog and prints the file name 
+of the selected file on the client area.
+
+***********************************************************
+*                       FILEDLG.C                         *
+***********************************************************
+
+#define INCL_WINSTDFILE
+#define INCL_WINSYS
+#define INCL_WINWINDOWMGR
+
+#include <os2.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "filedlg.h"
+
+MRESULT EXPENTRY ClientWndProc ( HWND hwndWnd,
+                                 ULONG ulMsg,
+                                 MPARAM mpParm1,
+                                 MPARAM mpParm2 ) ;
+
+BOOL FindFile ( HWND hwndWnd, CHAR * pchFile ) ;
+
+#define CLS_CLIENT               "MyClass"
+
+INT main ( VOID )
+{
+   HAB         habAnchor ;
+   HMQ         hmqQueue ;
+   ULONG       ulFlags ;
+   HWND        hwndFrame ;
+   HWND        hwndClient ;
+   BOOL        bLoop ;
+   QMSG        qmMsg ;
+
+   habAnchor = WinInitialize ( 0 ) ;
+   hmqQueue = WinCreateMsgQueue ( habAnchor, 0 ) ;
+
+   WinRegisterClass ( habAnchor,
+                      CLS_CLIENT,
+                      ClientWndProc,
+                      CS_SIZEREDRAW,
+                      sizeof ( PVOID )) ;
+
+   ulFlags = FCF_TITLEBAR | FCF_SYSMENU | FCF_MENU |
+             FCF_MINMAX | FCF_SIZEBORDER | FCF_SHELLPOSITION |
+             FCF_TASKLIST ;
+
+   hwndFrame = WinCreateStdWindow ( HWND_DESKTOP,
+                                  0,
+                                  &ulFlags,
+                                  CLS_CLIENT,
+                                  "File Dialog Example",
+                                  0,
+                                  NULLHANDLE,
+                                  RES_CLIENT,
+                                  &hwndClient ) ;
+
+   if ( hwndFrame != NULLHANDLE ) {
+
+      WinSetWindowPos ( hwndFrame,
+                        NULLHANDLE,
+                        50,
+                        50,
+                        500,
+                        250,
+                        SWP_SIZE |
+                        SWP_MOVE |
+                        SWP_ACTIVATE |
+                        SWP_SHOW ) ;
+
+      bLoop = WinGetMsg ( habAnchor, &qmMsg, NULLHANDLE, 0, 0 ) ;
+
+      while ( bLoop ) {
+         WinDispatchMsg ( habAnchor, &qmMsg ) ;
+         bLoop = WinGetMsg ( habAnchor,
+                             &qmMsg,
+                             NULLHANDLE,
+                             0,
+                             0 ) ;
+      } /* endwhile */
+
+      WinDestroyWindow ( hwndFrame ) ;
+   } /* endif */
+
+   WinDestroyMsgQueue ( hmqQueue ) ;
+   WinTerminate ( habAnchor ) ;
+   return 0 ;
+}
+
+MRESULT EXPENTRY ClientWndProc ( HWND hwndWnd,
+                                 ULONG ulMsg,
+                                 MPARAM mpParm1,
+                                 MPARAM mpParm2 )
+{
+   PCHAR pchFile ;
+
+   pchFile = WinQueryWindowPtr ( hwndWnd, 0 ) ;
+
+   switch ( ulMsg ) {
+
+   case WM_CREATE:
+      pchFile = ( PCHAR ) malloc ( CCHMAXPATH ) ;
+      if ( pchFile == NULL ) {
+         WinAlarm ( HWND_DESKTOP, WA_ERROR ) ;
+         WinMessageBox ( HWND_DESKTOP,
+                         hwndWnd,
+                         "No memory could be allocated !",
+                         "Error",
+                         0,
+                         MB_INFORMATION | MB_OK ) ;
+         return MRFROMSHORT ( TRUE ) ;
+      } /* endif */
+
+      WinSetWindowPtr ( hwndWnd, 0, pchFile ) ;
+      pchFile [0] = 0 ;
+      break ;
+
+   case WM_DESTROY:
+      if ( pchFile != NULL ) {
+         free ( pchFile ) ;
+      } /* endif */
+      break ;
+
+   case WM_PAINT:
+      {
+         HPS   hpsPaint ;
+         RECTL rclInvalid ;
+         CHAR  achText [CCHMAXPATH] ;
+
+         hpsPaint = WinBeginPaint ( hwndWnd,
+                                    NULLHANDLE,
+                                    &rclInvalid ) ;
+
+         WinFillRect ( hpsPaint, &rclInvalid, SYSCLR_WINDOW ) ;
+
+         if ( pchFile [0] != 0 ) {
+
+            WinQueryWindowRect ( hwndWnd, &rclInvalid ) ;
+            sprintf ( achText,
+                      "You have selected file %s",
+                      pchFile ) ;
+            WinDrawText ( hpsPaint,
+                          - 1,
+                          achText,
+                          &rclInvalid,
+                          0,
+                          0,
+                          DT_CENTER | DT_VCENTER | DT_TEXTATTRS ) ;
+         } /* endif */
+
+         WinEndPaint ( hpsPaint ) ;
+      }
+      break ;
+
+   case WM_COMMAND:
+
+      switch ( SHORT1FROMMP ( mpParm1 )) {
+
+      case IDM_OPEN:
+         if ( pchFile ) {
+            FindFile ( hwndWnd, pchFile ) ;
+         } /* endif */
+
+         WinInvalidateRect ( hwndWnd, NULL, TRUE ) ;
+         WinUpdateWindow ( hwndWnd ) ;
+         break ;
+
+      case IDM_EXIT:
+         WinPostMsg ( hwndWnd, WM_QUIT, 0, 0 ) ;
+         break ;
+
+      default:
+         return WinDefWindowProc ( hwndWnd,
+                                   ulMsg,
+                                   mpParm1,
+                                   mpParm2 ) ;
+      } /* endswitch */
+      break ;
+
+   default:
+      return WinDefWindowProc ( hwndWnd,
+                                ulMsg,
+                                mpParm1,
+                                mpParm2 ) ;
+   } /* endswitch */
+
+   return MRFROMSHORT ( FALSE ) ;
+}
+
+BOOL FindFile ( HWND hwndWnd, CHAR * pchFile )
+{
+   FILEDLG      fdFileDlg ;
+
+   memset ( &fdFileDlg, 0, sizeof ( FILEDLG )) ;
+
+   fdFileDlg.cbSize = sizeof ( FILEDLG ) ;
+   fdFileDlg.fl = FDS_CENTER | FDS_PRELOAD_VOLINFO |
+                  FDS_OPEN_DIALOG ;
+
+   if ( WinFileDlg ( HWND_DESKTOP,
+                     hwndWnd,
+                     &fdFileDlg ) != DID_OK ) {
+      WinAlarm ( HWND_DESKTOP, WA_ERROR ) ;
+      return FALSE ;
+   } /* endif */
+
+   strcpy ( pchFile, fdFileDlg.szFullFile ) ;
+   return TRUE ;
+}
+
+***********************************************************
+*                       FILEDLG.RC                        *
+***********************************************************
+
+#include <os2.h>
+#include "filedlg.h"
+
+MENU RES_CLIENT
+{
+   SUBMENU "~File", IDM_SUB1
+   {
+      MENUITEM "~New" , IDM_NEW
+      MENUITEM "~Open File...", IDM_OPEN
+      MENUITEM "~Close File", IDM_CLOSE
+      MENUITEM "E~xit" , IDM_EXIT
+   }
+}
+
+***********************************************************
+*                       FILEDLG.H                         *
+***********************************************************
+
+#define RES_CLIENT               256
+#define IDM_SUB1                 512
+#define IDM_NEW                  513
+#define IDM_OPEN                 514
+#define IDM_CLOSE                515
+#define IDM_EXIT                 516
+
+***********************************************************
+*                       FILEDLG.MAK                       *
+***********************************************************
+
+FILEDLG.EXE:                    FILEDLG.OBJ \
+                                FILEDLG.RES
+        LINK386 @<<
+FILEDLG
+FILEDLG
+FILEDLG
+OS2386
+FILEDLG
+<<
+        RC FILEDLG.RES FILEDLG.EXE
+
+FILEDLG.RES:                    FILEDLG.RC \
+                                FILEDLG.H
+        RC -r FILEDLG.RC FILEDLG.RES
+
+FILEDLG.OBJ:                    FILEDLG.C \
+                                FILEDLG.H
+        ICC -C+ -Kb+ -Ss+ FILEDLG.C
+
+***********************************************************
+*                       FILEDLG.DEF                       *
+***********************************************************
+
+NAME FILEDLG WINDOWAPI
+DESCRIPTION 'File dialog example
+             Copyright (c) 1992 by Kathleen Panov.
+             All rights reserved.'
+STACKSIZE 16384
+
+***********************************************************
+
+In the FILEDLG example, a standard window is created with a menu. In the 
+WM_CREATE processing, memory is allocated to hold the selected file name. 
+The pointer to this memory is attached as a window word using WinSetWindowPtr. 
+This memory is freed when the WM_DESTROY message is received.
+
+When the user selects the "Open" selection from the menu, a
+WM_COMMAND message is sent. When the message is received, the user 
+function FindFile is called. After this function returns, the client 
+area is invalidated to force a repaint.
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++                       NOTICE                            +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+The FILEDLG example is from "The Art of OS/2 C Programming" 
+by Kathleen Panov, Arthur Panov, and Larry Salomon, Jr., 
+ISBN 0-89435-446-9, published in August 1993 by QED Publishing Group. 
+The example was uploaded by the publisher with the assistance of 
+the authors for use by Forum members. 
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++                       END OF FILE                       +
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

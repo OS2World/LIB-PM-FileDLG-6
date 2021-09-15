@@ -3,7 +3,7 @@ Ver. 6 of PM shareware FileOpen and FileSave dialogs, very nice implementation a
 
 LICENSE
 ===============
-* GNU GPL V2
+* 
 
 COMPILE TOOLS
 ===============

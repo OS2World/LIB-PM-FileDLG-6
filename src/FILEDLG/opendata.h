@@ -53,10 +53,9 @@
         HBITMAP hbmRightDisabled;   // Disabled right arrow bitmap handle.
 
         /* Vars used by file find thread */
-        SEL     selStack;           // Selector for search thread stack.
-        ULONG   semTrigger;         // Semaphore to start search thread.
-        ULONG   semTerminate;       // Signals when search thread terminated.
-        ULONG   semAdd;             // Signals when item added to list box.
+        HEV     hevTrigger;         // Event sem to start search thread.
+        HEV     hevTerminate;       // Event sem signalled when thread exits.
+        HEV     hevAdd;             // Event sem signalled when list item added.
         HWND    hDlg;               // Handle to dialog box window.
         ULONG   ulDriveList;        // List of drives to be searched.
         PSZ     pszPattern;         // Ptr to file search pattern.

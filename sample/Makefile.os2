@@ -1,0 +1,39 @@
+# Makefile.os2 -- OPENTEST and SAVETEST for ArcaOS/OS2, GCC 9.2/kLIBC
+# Links with WLINK directly so the PM subsystem flag (sys os2pm) is set.
+
+SHELL = sh
+CC    = gcc
+
+CFLAGS = -O2 -Wall \
+         -I.. \
+         -I/@unixroot/usr/include
+
+all: opentest.exe savetest.exe
+
+opentest.exe: opentest.obj
+	echo sys os2pm               > opentest.lnk
+	echo name opentest.exe      >> opentest.lnk
+	echo file opentest.obj      >> opentest.lnk
+	echo lib ../FILEDLG.LIB     >> opentest.lnk
+	echo lib ../ERRMSG.LIB      >> opentest.lnk
+	echo op stack=8192          >> opentest.lnk
+	echo op map                 >> opentest.lnk
+	wlink @opentest.lnk
+
+savetest.exe: savetest.obj
+	echo sys os2pm               > savetest.lnk
+	echo name savetest.exe      >> savetest.lnk
+	echo file savetest.obj      >> savetest.lnk
+	echo lib ../FILEDLG.LIB     >> savetest.lnk
+	echo lib ../ERRMSG.LIB      >> savetest.lnk
+	echo op stack=8192          >> savetest.lnk
+	echo op map                 >> savetest.lnk
+	wlink @savetest.lnk
+
+%.obj: %.c
+	$(CC) $(CFLAGS) -Zomf -c -o $@ $<
+
+clean:
+	-rm -f *.obj *.exe *.map *.lnk compile.log
+
+.PHONY: all clean

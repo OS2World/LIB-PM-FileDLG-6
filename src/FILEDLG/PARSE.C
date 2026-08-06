@@ -53,13 +53,14 @@
 /****************************************************************************/
     USHORT ParseFileName( PSZ pszSource,PSZ pszDest,PSZ pszSearch )
     {
-        USHORT  usMaxPathLen;
-        USHORT  cbBuf;
+        ULONG   usMaxPathLen;
+        ULONG   cbBuf;
         USHORT  usResult;
         PCHAR   pcLastSlash;
 
     /* Get maximum path length */
-        if ( usResult = DosQSysInfo(0,(PBYTE)&usMaxPathLen,sizeof(USHORT)) )
+        if ( usResult = (USHORT)DosQuerySysInfo(QSV_MAX_PATH_LENGTH,QSV_MAX_PATH_LENGTH,
+                                                 (PBYTE)&usMaxPathLen,sizeof(ULONG)) )
             return usResult;
 
     /* Check whether input string just contains a drive letter.
@@ -71,11 +72,11 @@
             {
             strcpy( pszDest,pszSource );
             pszDest[0] = (CHAR)toupper(pszDest[0]);
-            if ( usResult = DosSelectDisk(pszDest[0]-'@') ) return usResult;
+            if ( usResult = (USHORT)DosSetDefaultDisk(pszDest[0]-'@') ) return usResult;
 
             /* Append current directory and search spec. */
             cbBuf = usMaxPathLen - 3;
-            if ( !(usResult = DosQCurDir(0,pszDest,&cbBuf)) )
+            if ( !(usResult = (USHORT)DosQueryCurrentDir(0,(PBYTE)pszDest,&cbBuf)) )
                 {
                 if ( *(pszDest + strlen(pszDest) - 1) != '\\' )
                     strcat( pszDest,szSlash );
@@ -85,11 +86,11 @@
             }
 
     /* Generate fully qualified file/path name */
-    usResult = DosQPathInfo(pszSource,FIL_QUERYFULLNAME,pszDest,usMaxPathLen,0L);
+    usResult = (USHORT)DosQueryPathInfo(pszSource,FIL_QUERYFULLNAME,pszDest,usMaxPathLen);
     if ( usResult ) return usResult;
 
     /* Change to specified drive */
-    if ( usResult = DosSelectDisk(toupper(pszDest[0])-'@') ) return usResult;
+    if ( usResult = (USHORT)DosSetDefaultDisk(toupper(pszDest[0])-'@') ) return usResult;
 
     /* Search for last backslash. */
     pcLastSlash = strrchr(pszDest,'\\');
@@ -98,8 +99,8 @@
     /* d:\filename or d:\dirname or d:\                               */
         if ( &pszDest[2] == pcLastSlash )
             {
-            switch ( usResult = DosChDir(pszDest,0L) ) {
-                case NO_ERROR:  // pszDest contains d:\dirname or d:\
+            switch ( usResult = (USHORT)DosSetCurrentDir(pszDest) ) {
+                case NO_ERROR:  /* pszDest contains d:\dirname or d:\ */
                     if ( *(pszDest + strlen(pszDest) - 1) != '\\' )
                         strcat( pszDest,szSlash );
                     strcat( pszDest,pszSearch );
@@ -108,7 +109,7 @@
                 case ERROR_FILE_NOT_FOUND:
                 case ERROR_PATH_NOT_FOUND:
                 case ERROR_ACCESS_DENIED:   // pszSource contains \filename
-                    if ( usResult = DosChDir(szSlash,0L) ) return usResult;
+                    if ( usResult = (USHORT)DosSetCurrentDir(szSlash) ) return usResult;
                     return usResult;
 
                 default:
@@ -117,7 +118,7 @@
             }
 
     /* Input has d:\dir\filename or d:\dir\dir */
-        switch ( usResult = DosChDir(pszDest,0L) ) {
+        switch ( usResult = (USHORT)DosSetCurrentDir(pszDest) ) {
             case NO_ERROR:      // pszSource contains d:\dir\dir
                 strcat( pszDest,szSlash );
                 strcat( pszDest,pszSearch );
@@ -127,7 +128,7 @@
             case ERROR_PATH_NOT_FOUND:
             case ERROR_ACCESS_DENIED:   // d:\dir\filename
                 *pcLastSlash = '\0';
-                if ( usResult = DosChDir(pszDest,0L) ) return usResult;
+                if ( usResult = (USHORT)DosSetCurrentDir(pszDest) ) return usResult;
                 *pcLastSlash = '\\';
                 return 0;
 

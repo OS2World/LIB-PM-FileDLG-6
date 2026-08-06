@@ -1,0 +1,23 @@
+; ERRMSG32.DEF -- 32-bit Open Watcom module definition for ERRMSG.DLL
+; Replaces the original 16-bit ERRMSG.DEF.
+;
+; Changes from original:
+;   - Removed 16-bit SEGMENTS section (CLASS 'FAR_DATA' is meaningless in flat model)
+;   - Removed leading underscore from export names (_ErrMessageBox -> ErrMessageBox)
+;     (16-bit Microsoft C added _ to cdecl; 32-bit Watcom does not)
+;   - Added TERMINSTANCE for clean DLL unload
+
+LIBRARY ERRMSG INITINSTANCE TERMINSTANCE
+
+DESCRIPTION 'V2.02 : PM program error handler. (c)Copyright 1990 Rick Yoder'
+
+DATA MULTIPLE NONSHARED
+
+EXPORTS
+    ErrMessageBox  @1
+    SysErrMsg      @2
+    SysErrCount    @3
+    HelpMgrErrors  @4
+    HelpMgrCount   @5
+    PMErrMsg       @6
+    PMErrCount     @7

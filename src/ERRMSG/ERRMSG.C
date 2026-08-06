@@ -91,14 +91,14 @@
     #include "errconst.h"
 
 /****************************************************************************/
-    USHORT cdecl far _loadds _export ErrMessageBox( HWND hwndOwner,
-                                                    PSZ pszCaption,
-                                                    USHORT usErrorCode,
-                                                    PERRORMSG perrormsg,
-                                                    USHORT cErrMsgCnt,
-                                                    ... )
+    USHORT EXPENTRY ErrMessageBox( HWND hwndOwner,
+                                   PSZ pszCaption,
+                                   USHORT usErrorCode,
+                                   PERRORMSG perrormsg,
+                                   USHORT cErrMsgCnt,
+                                   ... )
     {
-        static ULONG  hsem = 0L;  // semaphore to control access to function
+        static HMTX   s_hmtx = NULLHANDLE; // mutex to serialise access
         static CHAR   szBuf[512]; // buffer for formatted error message
 
         PERRORMSG   pList;      // ptr to list to be searched
@@ -110,7 +110,9 @@
         USHORT      usResult;   // result code
 
     /* Make sure this is the only thread accessing this function */
-        DosSemRequest( &hsem,SEM_INDEFINITE_WAIT );
+        if ( s_hmtx == NULLHANDLE )
+            DosCreateMutexSem( NULL,&s_hmtx,0,FALSE );
+        DosRequestMutexSem( s_hmtx,SEM_INDEFINITE_WAIT );
 
     /* Select error list that is to be searched */
         if ( perrormsg == NULL )
@@ -162,8 +164,8 @@
         usResult = WinMessageBox( HWND_DESKTOP,hwndOwner,szBuf,
                                   pszCaption,usErrorCode,flStyle );
 
-    /* Clear semaphore and return to caller */
-        DosSemClear( &hsem );
+    /* Release mutex and return to caller */
+        DosReleaseMutexSem( s_hmtx );
         return usResult;
     }
 /****************************************************************************/

@@ -18,6 +18,9 @@
  *                    button when focus passes to file name edit control.   *
  *      14-Nov-1990 : Disabled hard-error processing while executing        *
  *                      FileSaveDlg function.                               *
+ *      Ported to 32-bit OS/2: replaced 16-bit APIs (DosAllocSeg, MAKEP,   *
+ *      DosFreeSeg, DosQSysInfo, DosGetModHandle, DosQCurDisk, DosQCurDir) *
+ *      with 32-bit equivalents. Removed near/far/SEL modifiers.           *
  *                                                                          *
  * (c)Copyright 1990 Rick Yoder                                             *
  ****************************************************************************/
@@ -30,6 +33,12 @@
     #include <string.h>
     #include <io.h>
     #include <errmsg.h>
+
+/* HARDERROR_ENABLE/DISABLE not defined in 32-bit Open Watcom OS/2 headers */
+#ifndef HARDERROR_ENABLE
+#define HARDERROR_ENABLE    0
+#define HARDERROR_DISABLE   1
+#endif
 
     #include "filedlg.h"
     #include "dialog.h"
@@ -72,14 +81,14 @@
 /****************************************************************************
  *  Internal procedure declarations                                         *
  ****************************************************************************/
-    MRESULT EXPENTRY _SaveDlgProc( HWND hwnd,USHORT msg,MPARAM mp1,MPARAM mp2 );
-    static USHORT NEAR OpenFile( HWND hDlg,PDATA pData );
-    static VOID NEAR UpdateDir( HWND hDlg,PDATA pData );
+    MRESULT EXPENTRY _SaveDlgProc( HWND hwnd,ULONG msg,MPARAM mp1,MPARAM mp2 );
+    static USHORT OpenFile( HWND hDlg,PDATA pData );
+    static VOID UpdateDir( HWND hDlg,PDATA pData );
 /****************************************************************************/
 
 
 /****************************************************************************
- *  FileOpenDlg()                                                           *
+ *  FileSaveDlg()                                                           *
  ****************************************************************************/
     USHORT EXPENTRY FileSaveDlg( HWND hwndOwner,
                                  PSZ pszTitle,PSZ pszIns,
@@ -94,8 +103,8 @@
                                  USHORT fsOpenMode,
                                  ULONG ulReserved )
     {
+        ULONG   ulMaxPathLen;
         USHORT  usMaxPathLen;
-        SEL     sel;
         PDATA   pData;
         USHORT  rc;
         HMODULE hmod = 0;
@@ -109,13 +118,15 @@
         if ( pszIns == NULL ) pszIns = szDefSaveIns;
 
     /* Get maximum pathname length */
-        DosQSysInfo( 0,(PBYTE)&usMaxPathLen,sizeof(USHORT) );
+        DosQuerySysInfo( QSV_MAX_PATH_LENGTH,QSV_MAX_PATH_LENGTH,
+                         (PBYTE)&ulMaxPathLen,sizeof(ULONG) );
+        usMaxPathLen = (USHORT)ulMaxPathLen;
 
     /* Get module handle for FILEDLG dynamic-link library
      *  Note: Remove this code section if the file dialog box
      *        resources are not located in a dynamic-link library.
      */
-        if ( (rc = DosGetModHandle(szDLLName,&hmod)) )
+        if ( (rc = (USHORT)DosQueryModuleHandle(szDLLName,&hmod)) )
             {
             ErrMessageBox( hwndOwner,pszTitle,rc,NULL,0 );
             rc = FDLG_CANCEL;
@@ -123,47 +134,47 @@
             }
 
     /* Allocate memory for dialog data */
-        if ( (rc = DosAllocSeg(sizeof(DATA),&sel,SEG_NONSHARED)) )
+        if ( (rc = (USHORT)DosAllocMem((PPVOID)&pData,sizeof(DATA),
+                                        PAG_COMMIT|PAG_READ|PAG_WRITE)) )
             {
             ErrMessageBox( hwndOwner,pszTitle,rc,NULL,0 );
             rc = FDLG_CANCEL;
             goto EXIT;
             }
-        pData = MAKEP(sel,0);
 
     /* Allocate scratch data areas */
-        if ( (rc = DosAllocSeg(usMaxPathLen,&sel,SEG_NONSHARED)) )
+        if ( (rc = (USHORT)DosAllocMem((PPVOID)&pData->pszScratch,usMaxPathLen,
+                                        PAG_COMMIT|PAG_READ|PAG_WRITE)) )
             {
-            DosFreeSeg( SELECTOROF(pData) );
+            DosFreeMem( pData );
             ErrMessageBox( hwndOwner,pszTitle,rc,NULL,0 );
             rc = FDLG_CANCEL;
             goto EXIT;
             }
-        pData->pszScratch = MAKEP(sel,0);
 
     /* Allocate memory to store current directory */
-        if ( (rc = DosAllocSeg(usMaxPathLen,&sel,SEG_NONSHARED)) )
+        if ( (rc = (USHORT)DosAllocMem((PPVOID)&pData->pszCurDir,usMaxPathLen,
+                                        PAG_COMMIT|PAG_READ|PAG_WRITE)) )
             {
-            DosFreeSeg( SELECTOROF(pData->pszScratch) );
-            DosFreeSeg( SELECTOROF(pData) );
+            DosFreeMem( pData->pszScratch );
+            DosFreeMem( pData );
             ErrMessageBox( hwndOwner,pszTitle,rc,NULL,0 );
             rc = FDLG_CANCEL;
             goto EXIT;
             }
-        pData->pszCurDir = MAKEP(sel,0);
 
     /* Set current drive and directory to drive and directory listed         */
     /* in default file name, and store filename portion in scratch data area */
-        if ( (rc = DosAllocSeg(usMaxPathLen,&sel,SEG_NONSHARED)) )
+        if ( (rc = (USHORT)DosAllocMem((PPVOID)&pszTemp,usMaxPathLen,
+                                        PAG_COMMIT|PAG_READ|PAG_WRITE)) )
             {
-            DosFreeSeg( SELECTOROF(pData->pszScratch) );
-            DosFreeSeg( SELECTOROF(pData->pszCurDir) );
-            DosFreeSeg( SELECTOROF(pData) );
+            DosFreeMem( pData->pszScratch );
+            DosFreeMem( pData->pszCurDir );
+            DosFreeMem( pData );
             ErrMessageBox( hwndOwner,pszTitle,rc,NULL,0 );
             rc = FDLG_CANCEL;
             goto EXIT;
             }
-        pszTemp = MAKEP(sel,0);
         strcpy( pszTemp,pszDefault );
         if ( rc = ParseFileName(pszTemp,pData->pszScratch,szUnnamed) )
             {
@@ -172,7 +183,7 @@
             }
         else
             strcpy( pData->pszScratch,strrchr(pData->pszScratch,'\\')+1 );
-        DosFreeSeg( SELECTOROF(pszTemp) );
+        DosFreeMem( pszTemp );
 
     /* Initialize contents of dialog box data structure */
         pData->pszTitle     = pszTitle;
@@ -194,7 +205,7 @@
         pData->hbmRightPressed  = WinGetSysBitmap(HWND_DESKTOP,SBMP_SBRGARROWDEP);
         pData->hbmRightDisabled = WinGetSysBitmap(HWND_DESKTOP,SBMP_SBRGARROWDIS);
 
-    /* Activate open file dialog box */
+    /* Activate save file dialog box */
         rc = WinDlgBox( HWND_DESKTOP,hwndOwner,_SaveDlgProc,
                         hmod,IDD_SAVE,pData );
 
@@ -205,9 +216,9 @@
         GpiDeleteBitmap( pData->hbmRight );
         GpiDeleteBitmap( pData->hbmRightPressed );
         GpiDeleteBitmap( pData->hbmRightDisabled );
-        DosFreeSeg( SELECTOROF(pData->pszCurDir) );
-        DosFreeSeg( SELECTOROF(pData->pszScratch) );
-        DosFreeSeg( SELECTOROF(pData) );
+        DosFreeMem( pData->pszCurDir );
+        DosFreeMem( pData->pszScratch );
+        DosFreeMem( pData );
 
     /* re-enable hard error processing and return */
 EXIT:   DosError( HARDERROR_ENABLE );
@@ -219,7 +230,7 @@ EXIT:   DosError( HARDERROR_ENABLE );
 /****************************************************************************
  * SaveDlgProc()                                                            *
  ****************************************************************************/
-    MRESULT EXPENTRY _SaveDlgProc( HWND hwnd,USHORT msg,MPARAM mp1,MPARAM mp2 )
+    MRESULT EXPENTRY _SaveDlgProc( HWND hwnd,ULONG msg,MPARAM mp1,MPARAM mp2 )
     {
         PDATA   pData;
         USHORT  usResult;
@@ -337,9 +348,10 @@ EXIT:   DosError( HARDERROR_ENABLE );
  *                                                                          *
  *              This function returns a non-zero value if an error occured. *
  ****************************************************************************/
-    static USHORT NEAR OpenFile( HWND hDlg,PDATA pData )
+    static USHORT OpenFile( HWND hDlg,PDATA pData )
     {
         USHORT  usResult;
+        ULONG   ulAction;
 
         usResult = ParseFileName( pData->pszScratch,
                                   pData->pszFile,
@@ -365,21 +377,24 @@ EXIT:   DosError( HARDERROR_ENABLE );
                 }
             }
 
-        usResult = DosOpen( pData->pszFile,
+        usResult = (USHORT)DosOpen( pData->pszFile,
                             pData->phf,
-                            pData->pusAction,
+                            &ulAction,
                             pData->ulFileSize,
                             pData->usAttribute,
                             pData->fsOpenFlags,
                             pData->fsOpenMode,
-                            pData->ulReserved );
+                            (PEAOP2)NULL );
         if ( usResult )
             {
             ErrMessageBox( hDlg,pData->pszTitle,usResult,NULL,0 );
             return 1;
             }
         else
+            {
+            *pData->pusAction = (USHORT)ulAction;
             return 0;
+            }
     }
 /****************************************************************************/
 
@@ -388,19 +403,19 @@ EXIT:   DosError( HARDERROR_ENABLE );
  * UpdateDir() - This function updates the current directory display        *
  *               to reflect changes in the current drive/directory.         *
  ****************************************************************************/
-    static VOID NEAR UpdateDir( HWND hwnd,PDATA pData )
+    static VOID UpdateDir( HWND hwnd,PDATA pData )
     {
         USHORT  usResult;
-        USHORT  usCount;
-        USHORT  usDriveNum;
+        ULONG   usDriveNum;
         ULONG   ulMap;
+        ULONG   cbDir;
 
         pData->iFirstChar = 0;
 
-        if ( usResult = DosQCurDisk(&usDriveNum,&ulMap) )
+        if ( usResult = (USHORT)DosQueryCurrentDisk(&usDriveNum,&ulMap) )
             {
             WinSetDlgItemText( hwnd,SAVE_CURDIR,"" );
-            pData->pszCurDir = 0;
+            pData->pszCurDir[0] = '\0';
             ErrMessageBox( hwnd,pData->pszTitle,usResult,NULL,0 );
             return;
             }
@@ -410,8 +425,8 @@ EXIT:   DosError( HARDERROR_ENABLE );
         pData->pszCurDir[2] = '\\';
         pData->pszCurDir[3] = '\0';
 
-        usCount = pData->usMaxPathLen-3;
-        if ( usResult = DosQCurDir(0,pData->pszCurDir+3,&usCount) )
+        cbDir = pData->usMaxPathLen-3;
+        if ( usResult = (USHORT)DosQueryCurrentDir(0,(PBYTE)pData->pszCurDir+3,&cbDir) )
             ErrMessageBox( hwnd,pData->pszTitle,usResult,NULL,0 );
 
         WinSetDlgItemText( hwnd,SAVE_CURDIR,pData->pszCurDir );

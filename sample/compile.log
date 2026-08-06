@@ -1,0 +1,34 @@
+Open Watcom Make Version 2.0.1
+Portions Copyright (c) 1988-2002 Sybase, Inc. All Rights Reserved.
+Source code is available under the Sybase Open Watcom Public License.
+See http://www.openwatcom.org/ for details.
+	wcc386 -bt=os2 -bm -5 -fpi -sg -ei -Oaxt -DDEFAULT_QUEUE_SIZE=0 -D_QC -I..\h opentest
+Open Watcom C32 Optimizing Compiler Version 2.0.1
+Portions Copyright (c) 1984-2002 Sybase, Inc. All Rights Reserved.
+Source code is available under the Sybase Open Watcom Public License.
+See http://www.openwatcom.org/ for details.
+opentest.c: 92 lines, included 11992, 0 warnings, 0 errors
+Code size: 373
+	wlink system os2v2_pm name opentest.exe file opentest.obj import FileOpenDlg FILEDLG.
+** EXPERIMENTAL (HLL) ** Open Watcom Linker Version 2.0.1
+Portions Copyright (c) 1985-2002 Sybase, Inc. All Rights Reserved.
+Source code is available under the Sybase Open Watcom Public License.
+See http://www.openwatcom.org/ for details.
+loading object files
+searching libraries
+creating an OS/2 32-bit Presentation Manager executable
+	wcc386 -bt=os2 -bm -5 -fpi -sg -ei -Oaxt -DDEFAULT_QUEUE_SIZE=0 -D_QC -I..\h savetest
+Open Watcom C32 Optimizing Compiler Version 2.0.1
+Portions Copyright (c) 1984-2002 Sybase, Inc. All Rights Reserved.
+Source code is available under the Sybase Open Watcom Public License.
+See http://www.openwatcom.org/ for details.
+savetest.c: 92 lines, included 11992, 0 warnings, 0 errors
+Code size: 373
+	wlink system os2v2_pm name savetest.exe file savetest.obj import FileSaveDlg FILEDLG.
+** EXPERIMENTAL (HLL) ** Open Watcom Linker Version 2.0.1
+Portions Copyright (c) 1985-2002 Sybase, Inc. All Rights Reserved.
+Source code is available under the Sybase Open Watcom Public License.
+See http://www.openwatcom.org/ for details.
+loading object files
+searching libraries
+creating an OS/2 32-bit Presentation Manager executable

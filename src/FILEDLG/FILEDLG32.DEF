@@ -1,0 +1,18 @@
+; FILEDLG32.DEF -- 32-bit Open Watcom module definition for FILEDLG.DLL
+; Replaces the original 16-bit FILEDLG.DEF.
+;
+; Changes from original:
+;   - Removed 16-bit SEGMENTS section (CLASS 'FAR_DATA' is meaningless in flat model)
+;   - Lowercased export names (FILEOPENDLG -> FileOpenDlg, FILESAVEDLG -> FileSaveDlg)
+;     to match the 32-bit EXPENTRY (_System) decorated symbol names produced by wcc386
+;   - Added TERMINSTANCE for clean DLL unload
+
+LIBRARY FILEDLG INITINSTANCE TERMINSTANCE
+
+DESCRIPTION 'V2.04 : File dialog box functions. (c)Copyright 1990 Rick Yoder'
+
+DATA MULTIPLE NONSHARED
+
+EXPORTS
+    FileOpenDlg  @1
+    FileSaveDlg  @2

@@ -49,7 +49,7 @@
      */
 
 #if defined(INCL_ARROWS)
- extern MRESULT LeftArrow( HWND hwnd,USHORT msg,MPARAM mp1,MPARAM mp2,
+ extern MRESULT LeftArrow( HWND hwnd,ULONG msg,MPARAM mp1,MPARAM mp2,
                            HBITMAP hbmLeft,HBITMAP hbmLeftPressed,
                            HBITMAP hbmLeftDisabled );
     /* Purpose                  This function handles BN_PAINT
@@ -57,7 +57,7 @@
      *                          to the dialog box.
      */
 
- extern MRESULT RightArrow( HWND hwnd,USHORT msg,MPARAM mp1,MPARAM mp2,
+ extern MRESULT RightArrow( HWND hwnd,ULONG msg,MPARAM mp1,MPARAM mp2,
                             HBITMAP hbmRight,HBITMAP hbmRightPressed,
                             HBITMAP hbmRightDisabled );
     /* Purpose                  This function handles BN_PAINT messages

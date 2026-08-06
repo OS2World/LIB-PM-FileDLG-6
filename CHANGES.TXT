@@ -1,30 +1,58 @@
-List of changes from previous version:
+CHANGES.TXT -- LIB-PM-FileDLG-6 Change History
+===============================================
 
-1. Added v1.21 error messages to ErrMessageBox function.
+Version 6.1 (2026-08-05)
+-------------------------
+32-bit OS/2 port -- all DLL source files ported from 16-bit OS/2 1.x / Microsoft C 6.00
+to 32-bit OS/2 flat model, buildable with Open Watcom 2.0.
 
-2. Added long file name support.
+Build system:
+  - Added Makefile.wat (project root) for Open Watcom 2.0; builds ERRMSG.DLL then
+    FILEDLG.DLL, writing binaries to dll\ and import libraries to lib\.
+  - Added sample\Makefile.wat for Open Watcom 2.0; builds OPENTEST.EXE and SAVETEST.EXE
+    by importing FileOpenDlg / FileSaveDlg directly from FILEDLG.DLL by ordinal.
+  - Replaced 16-bit .DEF module definition files with inline wlink export directives.
 
-3. Changed file find dialog box to use multiple threads in order
-   to allow the user to select and open a file without waiting for
-   the search to end.
+ERRMSG DLL (src\ERRMSG\):
+  - errmsg.c: DosSemRequest / DosSemClear replaced with DosCreateMutexSem /
+    DosRequestMutexSem / DosReleaseMutexSem / DosCloseMutexSem.
+  - errmsg.c, errmsg.h, h\ERRMSG.H: removed cdecl / far / _loadds / _export / FAR
+    modifiers; ErrMessageBox declared EXPENTRY throughout.
 
-4. Added help button to find file dialog box.
+FILEDLG DLL (src\FILEDLG\):
+  - opendlg.c: Ported all 16-bit APIs:
+      DosQSysInfo            -> DosQuerySysInfo
+      DosGetModHandle        -> DosQueryModuleHandle
+      DosAllocSeg + MAKEP    -> DosAllocMem (PAG_COMMIT|PAG_READ|PAG_WRITE)
+      DosFreeSeg(SELECTOROF) -> DosFreeMem
+      DosSelectDisk          -> DosSetDefaultDisk
+      DosQCurDisk            -> DosQueryCurrentDisk
+      DosChDir               -> DosSetCurrentDir
+      DosQCurDir             -> DosQueryCurrentDir
+      WinQueryFocus(h, F)    -> WinQueryFocus(h)
+      FILEFINDBUF            -> FILEFINDBUF3 (oNextEntryOffset traversal)
+      DosFindFirst 6-arg     -> DosFindFirst 9-arg (FIL_STANDARD)
+      NEAR / far / _loadds / SEL removed throughout
+      DosOpen param 3: PUSHORT -> PULONG; param 8: ULONG -> PEAOP2
+      HARDERROR_ENABLE / HARDERROR_DISABLE defined locally (not in OW headers)
+  - finddlg.c: Same flat-model cleanup plus:
+      DosSemSet/Clear/Wait   -> DosCreateEventSem / DosPostEventSem /
+                                DosResetEventSem / DosWaitEventSem / DosCloseEventSem
+      DosAllocSeg + MAKEP    -> DosAllocMem; DosFreeSeg -> DosFreeMem
+      FILEFINDBUF            -> FILEFINDBUF3
+      SearchThread signature changed to void (*)(void *) for _beginthread compatibility
+  - savedlg.c: Same flat-model cleanup as opendlg.c.
+  - parse.c: No API changes required.
+  - static.c, buttons.c: No API changes required.
 
-5. Find file function will now search for files that meet one of
-   a comma-separated list of search criteria. For example, the
-   search pattern *c,*.h will locate all files with a .c or .h extension.
+Warning fixes (zero warnings on clean build):
+  - opendlg.c, finddlg.c: LOCAL usResult / rc changed USHORT -> SHORT to match
+    signed LIT_NONE / LIT_MEMERROR / LIT_ERROR constants (W124).
+  - finddlg.c: SearchThread parameter changed to void * with internal PDATA cast (W102).
+  - parse.c: Trailing backslash in // comment converted to block comment (W123).
 
-6. Hard-error processing is now disabled while FileOpenDlg and
-   FileSaveDlg are executing. On exit from these functions, hard-error
-   processing is enabled.
-
-7. Scroll-bar buttons are now located at each end of the current
-   directory name display in order to allow the user to view
-   the full name of the current directory.
-
-8. Horizontal scroll bars have been added to the file name and
-   directory name list boxes in order to allow the display of long
-   file names.
-
-9. This version of filedlg.dll and errmsg.dll requires OS/2 v1.2
-   or higher.
+Version 6.0 (1990)
+-------------------
+Original release by Rick Yoder. Supports OS/2 1.2-1.3 (16-bit, Microsoft C 6.00).
+Features: open/save/find-file dialogs, long filename support, multi-threaded find,
+horizontal scroll bars, help button integration, comma-separated search patterns.

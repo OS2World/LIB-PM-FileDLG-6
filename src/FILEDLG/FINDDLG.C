@@ -23,6 +23,10 @@
  *                    DosFindFirst/DosFindNext to return the list of        *
  *                    found files in blocks of 10.                          *
  *      12-Nov-1990 : Added help support.                                   *
+ *      Ported to 32-bit OS/2: replaced 16-bit APIs (DosAllocSeg, MAKEP,   *
+ *      DosFreeSeg, DosSemSet/Clear/Wait, DosQCurDisk) with 32-bit         *
+ *      equivalents. Removed near/far/SEL modifiers. Updated FILEFINDBUF   *
+ *      to FILEFINDBUF3 and buffer traversal to use oNextEntryOffset.      *
  *                                                                          *
  * (c)Copyright 1990 Rick Yoder                                             *
  ****************************************************************************/
@@ -46,16 +50,16 @@
 /****************************************************************************
  *  Procedure declarations                                                  *
  ****************************************************************************/
-    static MRESULT NEAR FindInit( HWND hwnd,MPARAM mp2 );
-    static MRESULT NEAR PatternEditCtrl( HWND hwnd,USHORT msg,
-                                         MPARAM mp1,MPARAM mp2 );
-    static MRESULT NEAR FindListbox( HWND hwnd,USHORT msg,
-                                     MPARAM mp1,MPARAM mp2 );
-    static MRESULT NEAR SearchButton( HWND hwnd );
-    static MRESULT NEAR OpenButton( HWND hwnd );
-    static BOOL NEAR Directory( PSZ pszFileSpec,PDATA pData );
-    static USHORT NEAR OpenFile( HWND hDlg,PDATA pData );
-    static VOID FAR SearchThread( PDATA pData );
+    static MRESULT FindInit( HWND hwnd,MPARAM mp2 );
+    static MRESULT PatternEditCtrl( HWND hwnd,ULONG msg,
+                                    MPARAM mp1,MPARAM mp2 );
+    static MRESULT FindListbox( HWND hwnd,ULONG msg,
+                                MPARAM mp1,MPARAM mp2 );
+    static MRESULT SearchButton( HWND hwnd );
+    static MRESULT OpenButton( HWND hwnd );
+    static BOOL Directory( PSZ pszFileSpec,PDATA pData );
+    static USHORT OpenFile( HWND hDlg,PDATA pData );
+    static VOID SearchThread( VOID *pArg );
 /****************************************************************************/
 
 
@@ -72,8 +76,8 @@
      */
 
     #define SEARCH_ADDFILES     (WM_USER+2)
-    /* mp1 contains a pointer to an array of FILEFINDBUF structures.
-     * mp2 contains the size of the array.
+    /* mp1 contains a pointer to an array of FILEFINDBUF3 structures.
+     * mp2 contains the count of entries in the array.
      */
 /****************************************************************************/
 
@@ -81,7 +85,7 @@
 /****************************************************************************
  * _FindDlgProc()                                                           *
  ****************************************************************************/
-    MRESULT EXPENTRY _FindDlgProc( HWND hwnd,USHORT msg,MPARAM mp1,MPARAM mp2 )
+    MRESULT EXPENTRY _FindDlgProc( HWND hwnd,ULONG msg,MPARAM mp1,MPARAM mp2 )
     {
         PDATA   pData;
 
@@ -127,17 +131,19 @@
                         switch ( pData->fControl ) {
                             case CANCEL:
                                 pData->fControl = TERMINATE;
-                                DosSemClear( &pData->semTrigger );
+                                DosPostEventSem( pData->hevTrigger );
                                 DosExitCritSec();
-                                DosSemWait( &pData->semTerminate,SEM_INDEFINITE_WAIT );
-                                DosFreeSeg( pData->selStack );
-                                DosFreeSeg( SELECTOROF(pData->pszPattern) );
-                                DosFreeSeg( SELECTOROF(pData->pszScratch2) );
+                                DosWaitEventSem( pData->hevTerminate,SEM_INDEFINITE_WAIT );
+                                DosFreeMem( pData->pszPattern );
+                                DosFreeMem( pData->pszScratch2 );
+                                DosCloseEventSem( pData->hevTrigger );
+                                DosCloseEventSem( pData->hevTerminate );
+                                DosCloseEventSem( pData->hevAdd );
                                 WinDismissDlg( hwnd,FDLG_CANCEL );
                                 break;
 
                             case CONTINUE:
-                                DosSemClear( &pData->semAdd );
+                                DosPostEventSem( pData->hevAdd );
                                 pData->fControl = CANCEL;
                                 DosExitCritSec();
                                 break;
@@ -172,7 +178,7 @@
 
             case SEARCH_ADDDIR:
                 {
-                USHORT  rc;
+                SHORT   rc;
 
                 pData = (PDATA)WinQueryWindowULong( hwnd,QWL_USER );
                 if ( pData->fControl == CONTINUE )
@@ -188,15 +194,15 @@
                         WinPostMsg( hwnd,SEARCH_DONE,MPFROMSHORT(LISTBOX_FULL),0L );
                         }
                     }
-                DosSemClear( &pData->semAdd );
+                DosPostEventSem( pData->hevAdd );
                 return 0L;
                 }
 
             case SEARCH_ADDFILES:
                 {
-                USHORT       rc;
-                USHORT       n;
-                PFILEFINDBUF pFindbuf;
+                SHORT         rc;
+                ULONG         n;
+                PFILEFINDBUF3 pFindbuf;
 
                 pData = (PDATA)WinQueryWindowULong( hwnd,QWL_USER );
                 if ( pData->fControl == CONTINUE )
@@ -205,7 +211,7 @@
                     pData->pszScratch2[1] = ' ';
                     pData->pszScratch2[2] = ' ';
                     pFindbuf = PVOIDFROMMP( mp1 );
-                    for ( n = 0; n < SHORT1FROMMP(mp2); n++ )
+                    for ( n = 0; n < (ULONG)mp2; n++ )
                         {
                         strcpy( pData->pszScratch2+3,pFindbuf->achName );
                         rc = SHORT1FROMMR( WinSendDlgItemMsg(hwnd,FIND_FLIST,
@@ -219,10 +225,10 @@
                             WinPostMsg( hwnd,SEARCH_DONE,MPFROMSHORT(LISTBOX_FULL),0L );
                             break;
                             }
-                        pFindbuf = (PFILEFINDBUF)( pFindbuf->achName + pFindbuf->cchName + 1 );
+                        pFindbuf = (PFILEFINDBUF3)((PBYTE)pFindbuf + pFindbuf->oNextEntryOffset);
                         }
                     }
-                DosSemClear( &pData->semAdd );
+                DosPostEventSem( pData->hevAdd );
                 return 0L;
                 }
 
@@ -244,14 +250,15 @@
 /****************************************************************************
  * FindInit() -- Process WM_INITDLG message sent to find file dialog box.   *
  ****************************************************************************/
-    static MRESULT NEAR FindInit( HWND hwnd,MPARAM mp2 )
+    static MRESULT FindInit( HWND hwnd,MPARAM mp2 )
     {
         #define STACK_SIZE  (8*1024)
 
         PDATA   pData;
-        USHORT  usResult,usCount,usIndex,usDriveNum;
+        APIRET  usResult;
+        USHORT  usCount,usIndex;
+        ULONG   usDriveNum;
         ULONG   ulMap;
-        SEL     sel;
 
         pData = PVOIDFROMMP( mp2 );
 
@@ -266,46 +273,38 @@
             return 0L;
             }
 
-        if ( usResult = DosAllocSeg(STACK_SIZE,&pData->selStack,SEG_NONSHARED) )
+        if ( usResult = DosAllocMem((PPVOID)&pData->pszPattern,pData->usMaxPathLen,
+                                    PAG_COMMIT|PAG_READ|PAG_WRITE) )
             {
-            ErrMessageBox( hwnd,szSearchTitle,usResult,NULL,0 );
+            ErrMessageBox( hwnd,szSearchTitle,(USHORT)usResult,NULL,0 );
             WinDismissDlg( hwnd,FDLG_CANCEL );
             return 0L;
             }
-        if ( usResult = DosAllocSeg(pData->usMaxPathLen,&sel,SEG_NONSHARED) )
+        if ( usResult = DosAllocMem((PPVOID)&pData->pszScratch2,pData->usMaxPathLen,
+                                    PAG_COMMIT|PAG_READ|PAG_WRITE) )
             {
-            ErrMessageBox( hwnd,szSearchTitle,usResult,NULL,0 );
-            DosFreeSeg( pData->selStack );
+            ErrMessageBox( hwnd,szSearchTitle,(USHORT)usResult,NULL,0 );
+            DosFreeMem( pData->pszPattern );
             WinDismissDlg( hwnd,FDLG_CANCEL );
             return 0L;
             }
-        pData->pszPattern = MAKEP(sel,0);
-        if ( usResult = DosAllocSeg(pData->usMaxPathLen,&sel,SEG_NONSHARED) )
-            {
-            ErrMessageBox( hwnd,szSearchTitle,usResult,NULL,0 );
-            DosFreeSeg( pData->selStack );
-            DosFreeSeg( SELECTOROF(pData->pszPattern) );
-            WinDismissDlg( hwnd,FDLG_CANCEL );
-            return 0L;
-            }
-        pData->pszScratch2 = MAKEP(sel,0);
 
-        pData->semTrigger   = 0L;
-        pData->semTerminate = 0L;
-        pData->semAdd       = 0L;
-        pData->hDlg         = hwnd;
-        pData->fControl     = CANCEL;
+        DosCreateEventSem( NULL,&pData->hevTrigger,0,FALSE );
+        DosCreateEventSem( NULL,&pData->hevTerminate,0,FALSE );
+        DosCreateEventSem( NULL,&pData->hevAdd,0,FALSE );
+        pData->hDlg     = hwnd;
+        pData->fControl = CANCEL;
 
-        DosSemSet( &pData->semTrigger );
-        DosSemSet( &pData->semTerminate );
-        pData->tid = _beginthread( SearchThread,MAKEP(pData->selStack,0),STACK_SIZE,pData );
-        if ( -1 == pData->tid )
+        pData->tid = _beginthread( SearchThread,NULL,STACK_SIZE,pData );
+        if ( -1 == (int)pData->tid )
             {
             ErrMessageBox( hwnd,szSearchTitle,SEARCH_THREAD_ERROR,
                            appMsgList,appMsgCount );
-            DosFreeSeg( pData->selStack );
-            DosFreeSeg( SELECTOROF(pData->pszPattern) );
-            DosFreeSeg( SELECTOROF(pData->pszScratch2) );
+            DosFreeMem( pData->pszPattern );
+            DosFreeMem( pData->pszScratch2 );
+            DosCloseEventSem( pData->hevTrigger );
+            DosCloseEventSem( pData->hevTerminate );
+            DosCloseEventSem( pData->hevAdd );
             WinDismissDlg( hwnd,FDLG_CANCEL );
             return 0L;
             }
@@ -318,9 +317,9 @@
         pData->usSelectFind = 0;
 
         /* Fill in disk drive list box */
-        if ( usResult = DosQCurDisk(&usDriveNum,&ulMap) )
+        if ( usResult = DosQueryCurrentDisk(&usDriveNum,&ulMap) )
             {
-            ErrMessageBox( hwnd,szSearchTitle,usResult,NULL,0 );
+            ErrMessageBox( hwnd,szSearchTitle,(USHORT)usResult,NULL,0 );
             WinDismissDlg( hwnd,FDLG_CANCEL );
             return 0L;
             }
@@ -356,8 +355,8 @@
  * PatternEditCtrl() -- Handles messages sent by FIND_PATTERN edit control  *
  *                      to find file dialog box.                            *
  ****************************************************************************/
-    static MRESULT NEAR PatternEditCtrl( HWND hwnd,USHORT msg,
-                                         MPARAM mp1,MPARAM mp2 )
+    static MRESULT PatternEditCtrl( HWND hwnd,ULONG msg,
+                                    MPARAM mp1,MPARAM mp2 )
     {
         PDATA   pData;
         USHORT  usLen;
@@ -392,11 +391,11 @@
  * FindListbox() -- Handle messages sent by FIND_FLIST list box to the      *
  *                  find file dialog box.                                   *
  ****************************************************************************/
-    static MRESULT NEAR FindListbox( HWND hwnd,USHORT msg,
-                                     MPARAM mp1,MPARAM mp2 )
+    static MRESULT FindListbox( HWND hwnd,ULONG msg,
+                                MPARAM mp1,MPARAM mp2 )
     {
         PDATA   pData;
-        USHORT  usResult;
+        SHORT   usResult;
 
         pData = (PDATA)WinQueryWindowULong( hwnd,QWL_USER );
         switch ( SHORT2FROMMP(mp1) ) {
@@ -456,7 +455,7 @@
  * OpenButton() -- Executed whenever OPEN button in find file dialog        *
  *                 box is clicked.                                          *
  ****************************************************************************/
-    static MRESULT NEAR OpenButton( HWND hwnd )
+    static MRESULT OpenButton( HWND hwnd )
     {
         PDATA   pData;
         SHORT   iItem;
@@ -467,7 +466,7 @@
      * occurs when the enter key is used to select a list box   *
      * item.                                                    */
         hwndButton = WinWindowFromID( hwnd,FIND_OPEN );
-        if ( hwndButton != WinQueryFocus(HWND_DESKTOP,FALSE) ) return 0L;
+        if ( hwndButton != WinQueryFocus(HWND_DESKTOP) ) return 0L;
 
         pData = (PDATA)WinQueryWindowULong( hwnd,QWL_USER );
         iItem = pData->usSelectFind;
@@ -492,13 +491,15 @@
                 {
                 DosEnterCritSec();
                 pData->fControl = TERMINATE;
-                DosSemClear( &pData->semTrigger );
-                DosSemClear( &pData->semAdd );
+                DosPostEventSem( pData->hevTrigger );
+                DosPostEventSem( pData->hevAdd );
                 DosExitCritSec();
-                DosSemWait( &pData->semTerminate,SEM_INDEFINITE_WAIT );
-                DosFreeSeg( pData->selStack );
-                DosFreeSeg( SELECTOROF(pData->pszPattern) );
-                DosFreeSeg( SELECTOROF(pData->pszScratch2) );
+                DosWaitEventSem( pData->hevTerminate,SEM_INDEFINITE_WAIT );
+                DosFreeMem( pData->pszPattern );
+                DosFreeMem( pData->pszScratch2 );
+                DosCloseEventSem( pData->hevTrigger );
+                DosCloseEventSem( pData->hevTerminate );
+                DosCloseEventSem( pData->hevAdd );
                 WinDismissDlg( hwnd,FDLG_OK );
                 }
             else
@@ -521,9 +522,10 @@
  *              This function returns a non-zero value if an error occured  *
  *              or the input string was a search specification.             *
  ****************************************************************************/
-    static USHORT NEAR OpenFile( HWND hDlg,PDATA pData )
+    static USHORT OpenFile( HWND hDlg,PDATA pData )
     {
         USHORT  usResult;
+        ULONG   ulAction;
 
         usResult = ParseFileName( pData->pszScratch,
                                   pData->pszFile,
@@ -538,21 +540,24 @@
             return 1;
         else
             {
-            usResult = DosOpen( pData->pszFile,
+            usResult = (USHORT)DosOpen( pData->pszFile,
                                 pData->phf,
-                                pData->pusAction,
+                                &ulAction,
                                 pData->ulFileSize,
                                 pData->usAttribute,
                                 pData->fsOpenFlags,
                                 pData->fsOpenMode,
-                                pData->ulReserved );
+                                (PEAOP2)NULL );
             if ( usResult )
                 {
                 ErrMessageBox( hDlg,pData->pszTitle,usResult,NULL,0 );
                 return 1;
                 }
             else
+                {
+                *pData->pusAction = (USHORT)ulAction;
                 return 0;
+                }
             }
     }
 /****************************************************************************/
@@ -562,7 +567,7 @@
  * SearchButton() -- Executed whenever SEARCH button in find file dialog    *
  *                   box is clicked.                                        *
  ****************************************************************************/
-    static MRESULT NEAR SearchButton( HWND hwnd )
+    static MRESULT SearchButton( HWND hwnd )
     {
         PDATA       pData;
         SHORT       iItem;
@@ -610,7 +615,7 @@
 
     /* Start search thread */
         pData->fControl = CONTINUE;
-        DosSemClear( &pData->semTrigger );
+        DosPostEventSem( pData->hevTrigger );
 
     /* Set focus to list of files found */
         WinSetFocus( HWND_DESKTOP,WinWindowFromID(hwnd,FIND_FLIST) );
@@ -623,33 +628,36 @@
  * SearchThread() - This function searches for the specified files in       *
  *                  a background thread.                                    *
  ****************************************************************************/
-    static VOID FAR SearchThread( PDATA pData )
+    static VOID SearchThread( VOID *pArg )
     {
-        USHORT  usCount;
+        PDATA   pData = (PDATA)pArg;
+        ULONG   usCount;
         PSZ     pszCurrent;
         PSZ     pszFileSpec;
-        SEL     sel;
-        USHORT  rc;
+        ULONG   ulPost;
+        APIRET  rc;
 
         while (TRUE)
             {
-            DosSemWait( &pData->semTrigger,SEM_INDEFINITE_WAIT );
-            DosSemSet( &pData->semTrigger );
+            DosWaitEventSem( pData->hevTrigger,SEM_INDEFINITE_WAIT );
+            DosResetEventSem( pData->hevTrigger,&ulPost );
 
             if ( pData->fControl == TERMINATE )
                 {
                 DosEnterCritSec();
-                DosSemClear( &pData->semTerminate );
+                DosPostEventSem( pData->hevTerminate );
                 _endthread();
                 }
 
-            if ( rc = DosAllocSeg(pData->usMaxPathLen,&sel,SEG_NONSHARED) )
+            if ( rc = DosAllocMem((PPVOID)&pszFileSpec,pData->usMaxPathLen,
+                                   PAG_COMMIT|PAG_READ|PAG_WRITE) )
                 {
                 DosEnterCritSec();
-                WinPostMsg( pData->hDlg,SEARCH_DONE,0L,MPFROMSHORT(rc) );
-                goto RESTART_LOOP;
+                WinPostMsg( pData->hDlg,SEARCH_DONE,0L,MPFROMSHORT((USHORT)rc) );
+                pData->fControl = CANCEL;
+                DosExitCritSec();
+                continue;
                 }
-            pszFileSpec = MAKEP(sel,0);
 
             pData->usFindCount = 0;
             pszCurrent = strtok( pData->pszPattern,szDelimiters );
@@ -670,8 +678,8 @@
                                 goto RESTART_LOOP;
 
                             case TERMINATE:
-                                DosFreeSeg( SELECTOROF(pszFileSpec) );
-                                DosSemClear( &pData->semTerminate );
+                                DosFreeMem( pszFileSpec );
+                                DosPostEventSem( pData->hevTerminate );
                                 _endthread();
 
                             case ERROR:
@@ -686,8 +694,8 @@
                             goto RESTART_LOOP;
 
                         case TERMINATE:
-                            DosFreeSeg( SELECTOROF(pszFileSpec) );
-                            DosSemClear( &pData->semTerminate );
+                            DosFreeMem( pszFileSpec );
+                            DosPostEventSem( pData->hevTerminate );
                             _endthread();
 
                         case CONTINUE:
@@ -704,7 +712,7 @@
             WinPostMsg( pData->hDlg,SEARCH_DONE,MPFROMSHORT(FILES_FOUND),0L );
 
 RESTART_LOOP:
-            DosFreeSeg( SELECTOROF(pszFileSpec) );
+            DosFreeMem( pszFileSpec );
             pData->fControl = CANCEL;
             DosExitCritSec();
             } /* end while */
@@ -721,51 +729,50 @@ RESTART_LOOP:
  *               This function returns a value of FALSE if an error         *
  *               occurs, otherwise it returns a value of TRUE.              *
  ****************************************************************************/
-    static BOOL NEAR Directory( PSZ pszFileSpec,PDATA pData )
+    static BOOL Directory( PSZ pszFileSpec,PDATA pData )
     {
         #define FINDCOUNT       10
-        #define FILEFINDSIZE    (FINDCOUNT*sizeof(FILEFINDBUF))
+        #define FILEFINDSIZE    (FINDCOUNT*sizeof(FILEFINDBUF3))
         #define ABORT_CHK()     if ( pData->fControl != CONTINUE ) goto ABORT_EXIT
 
-        SEL          sel;
-        PSZ          pszSpec;
-        PSZ          pszSub;
-        PFILEFINDBUF pFindbuf,pFindbuf2;
-        PFILEFINDBUF pCurrent;
-        HDIR         hdir = HDIR_CREATE;
-        USHORT       usSearchCount;
-        USHORT       n;
-        USHORT       usResult,rc;
+        PSZ            pszSpec;
+        PSZ            pszSub;
+        PFILEFINDBUF3  pFindbuf,pFindbuf2;
+        PFILEFINDBUF3  pCurrent;
+        HDIR           hdir = HDIR_CREATE;
+        ULONG          usSearchCount;
+        ULONG          n;
+        ULONG          ulPost;
+        APIRET         usResult,rc;
 
         /*********************************************************
-         * Allocate memory for file find buffers                 *
-         *   DosAllocSeg is used to keep from overflowing the    *
-         *   stack when a disk with a large directory tree is    *
-         *   searched.                                           *
+         * Allocate memory for file find buffers.               *
+         * DosAllocMem keeps them off the stack so deeply        *
+         * recursive calls on large trees don't overflow it.    *
          *********************************************************/
-        if ( rc = DosAllocSeg(FILEFINDSIZE,&sel,SEG_NONSHARED) )
+        if ( rc = DosAllocMem((PPVOID)&pFindbuf,FILEFINDSIZE,
+                               PAG_COMMIT|PAG_READ|PAG_WRITE) )
             {
             DosEnterCritSec();
             if ( pData->fControl == CONTINUE )
                 {
-                WinPostMsg( pData->hDlg,SEARCH_DONE,0L,MPFROMSHORT(rc) );
+                WinPostMsg( pData->hDlg,SEARCH_DONE,0L,MPFROMSHORT((USHORT)rc) );
                 pData->fControl = ERROR;
                 }
             return FALSE;
             }
-        pFindbuf = MAKEP( sel,0 );
-        if ( rc = DosAllocSeg(FILEFINDSIZE,&sel,SEG_NONSHARED) )
+        if ( rc = DosAllocMem((PPVOID)&pFindbuf2,FILEFINDSIZE,
+                               PAG_COMMIT|PAG_READ|PAG_WRITE) )
             {
             DosEnterCritSec();
             if ( pData->fControl == CONTINUE )
                 {
-                WinPostMsg( pData->hDlg,SEARCH_DONE,0L,MPFROMSHORT(rc) );
+                WinPostMsg( pData->hDlg,SEARCH_DONE,0L,MPFROMSHORT((USHORT)rc) );
                 pData->fControl = ERROR;
                 }
-            DosFreeSeg( SELECTOROF(pFindbuf) );
+            DosFreeMem( pFindbuf );
             return FALSE;
             }
-        pFindbuf2 = MAKEP( sel,0 );
 
         /* Split input file spec into directory name and file name */
         strcpy( pData->pszScratch2,pszFileSpec );
@@ -776,16 +783,16 @@ RESTART_LOOP:
         usSearchCount = FINDCOUNT;
         usResult = DosFindFirst( pData->pszScratch2,&hdir,pData->usShowAttr,
                                  pFindbuf2,FILEFINDSIZE,
-                                 &usSearchCount,0L );
+                                 &usSearchCount,FIL_STANDARD );
 
         /* Add directory name to list box if a file was found */
         if ( !usResult )
             {
             ABORT_CHK();
-            DosSemSet( &pData->semAdd );
+            DosResetEventSem( pData->hevAdd,&ulPost );
             while ( !WinPostMsg(pData->hDlg,SEARCH_ADDDIR,MPFROMP(pszFileSpec),0L) )
                 ABORT_CHK();
-            DosSemWait( &pData->semAdd,SEM_INDEFINITE_WAIT );
+            DosWaitEventSem( pData->hevAdd,SEM_INDEFINITE_WAIT );
             }
 
         /* Add names of found files to list box */
@@ -794,19 +801,20 @@ RESTART_LOOP:
             ABORT_CHK();
             memcpy( pFindbuf,pFindbuf2,FILEFINDSIZE );
             pData->usFindCount += usSearchCount;
-            DosSemSet( &pData->semAdd );
+            DosResetEventSem( pData->hevAdd,&ulPost );
             while ( !WinPostMsg(pData->hDlg,SEARCH_ADDFILES,
                                 MPFROMP(pFindbuf),
-                                MPFROMSHORT(usSearchCount)) ) ABORT_CHK();
+                                (MPARAM)usSearchCount) ) ABORT_CHK();
 
             /* Get next set of matching files while list is being updated */
             usSearchCount = FINDCOUNT;
             usResult = DosFindNext( hdir,pFindbuf2,FILEFINDSIZE,&usSearchCount );
 
             /* Wait until listbox is finished being updated */
-            DosSemWait( &pData->semAdd,SEM_INDEFINITE_WAIT );
+            DosWaitEventSem( pData->hevAdd,SEM_INDEFINITE_WAIT );
             }
-        DosFreeSeg( SELECTOROF(pFindbuf2) );
+        DosFreeMem( pFindbuf2 );
+        pFindbuf2 = NULL;
         if ( usResult != ERROR_NO_MORE_SEARCH_HANDLES ) DosFindClose(hdir);
         if (   (usResult && usResult != ERROR_NO_MORE_FILES)
             || pData->fControl != CONTINUE )
@@ -815,25 +823,25 @@ RESTART_LOOP:
             if ( pData->fControl == CONTINUE )
                 {
                 pData->fControl = ERROR;
-                WinPostMsg( pData->hDlg,SEARCH_DONE,0L,MPFROMSHORT(usResult) );
+                WinPostMsg( pData->hDlg,SEARCH_DONE,0L,MPFROMSHORT((USHORT)usResult) );
                 }
-            DosFreeSeg( SELECTOROF(pFindbuf) );
+            DosFreeMem( pFindbuf );
             return FALSE;
             }
 
         /* Allocate memory for subdirectory search spec. */
-        if ( rc = DosAllocSeg(pData->usMaxPathLen,&sel,SEG_NONSHARED) )
+        if ( rc = DosAllocMem((PPVOID)&pszSub,pData->usMaxPathLen,
+                               PAG_COMMIT|PAG_READ|PAG_WRITE) )
             {
             DosEnterCritSec();
             if ( pData->fControl == CONTINUE )
                 {
-                WinPostMsg( pData->hDlg,SEARCH_DONE,0L,MPFROMSHORT(rc) );
+                WinPostMsg( pData->hDlg,SEARCH_DONE,0L,MPFROMSHORT((USHORT)rc) );
                 pData->fControl = ERROR;
                 }
-            DosFreeSeg( SELECTOROF(pFindbuf) );
+            DosFreeMem( pFindbuf );
             return FALSE;
             }
-        pszSub = MAKEP( sel,0 );
 
         /* Search subdirectories for matching files */
         hdir            = HDIR_CREATE;
@@ -843,7 +851,7 @@ RESTART_LOOP:
         strcat( pData->pszScratch2,szStarDotStar );
         usResult = DosFindFirst( pData->pszScratch2,&hdir,FILE_DIRECTORY,
                                  pFindbuf,FILEFINDSIZE,
-                                 &usSearchCount,0L );
+                                 &usSearchCount,FIL_STANDARD );
         while ( !usResult )
             {
             for ( pCurrent = pFindbuf,n = 0; n < usSearchCount; n++ )
@@ -852,8 +860,8 @@ RESTART_LOOP:
                     {
                     DosEnterCritSec();
                     DosFindClose( hdir );
-                    DosFreeSeg( SELECTOROF(pFindbuf) );
-                    DosFreeSeg( SELECTOROF(pszSub) );
+                    DosFreeMem( pFindbuf );
+                    DosFreeMem( pszSub );
                     return FALSE;
                     }
 
@@ -868,12 +876,12 @@ RESTART_LOOP:
                     if ( !Directory(pszSub,pData) )
                         {
                         DosFindClose( hdir );
-                        DosFreeSeg( SELECTOROF(pFindbuf) );
-                        DosFreeSeg( SELECTOROF(pszSub) );
+                        DosFreeMem( pFindbuf );
+                        DosFreeMem( pszSub );
                         return FALSE;
                         }
                     }
-                pCurrent = (PFILEFINDBUF)( pCurrent->achName + pCurrent->cchName + 1 );
+                pCurrent = (PFILEFINDBUF3)((PBYTE)pCurrent + pCurrent->oNextEntryOffset);
                 }
             usSearchCount = FINDCOUNT;
             usResult = DosFindNext( hdir,pFindbuf,FILEFINDSIZE,&usSearchCount );
@@ -886,24 +894,24 @@ RESTART_LOOP:
             if ( pData->fControl == CONTINUE )
                 {
                 pData->fControl = ERROR;
-                WinPostMsg( pData->hDlg,SEARCH_DONE,0L,MPFROMSHORT(usResult) );
+                WinPostMsg( pData->hDlg,SEARCH_DONE,0L,MPFROMSHORT((USHORT)usResult) );
                 }
-            DosFreeSeg( SELECTOROF(pFindbuf) );
-            DosFreeSeg( SELECTOROF(pszSub) );
+            DosFreeMem( pFindbuf );
+            DosFreeMem( pszSub );
             return FALSE;
             }
 
         /* Done. Return to caller */
-        DosFreeSeg( SELECTOROF(pFindbuf) );
-        DosFreeSeg( SELECTOROF(pszSub) );
+        DosFreeMem( pFindbuf );
+        DosFreeMem( pszSub );
         return TRUE;
 
         /* Executed by ABORT_CHK() macro if search is aborted */
 ABORT_EXIT:
         DosEnterCritSec();
         DosFindClose( hdir );
-        DosFreeSeg( SELECTOROF(pFindbuf) );
-        DosFreeSeg( SELECTOROF(pFindbuf2) );
+        DosFreeMem( pFindbuf );
+        if ( pFindbuf2 ) DosFreeMem( pFindbuf2 );
         return FALSE;
 
         #undef FINDCOUNT

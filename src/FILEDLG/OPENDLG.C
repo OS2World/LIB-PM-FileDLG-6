@@ -46,6 +46,12 @@
     #include <string.h>
     #include <errmsg.h>
 
+/* HARDERROR_ENABLE/DISABLE not defined in 32-bit Open Watcom OS/2 headers */
+#ifndef HARDERROR_ENABLE
+#define HARDERROR_ENABLE    0
+#define HARDERROR_DISABLE   1
+#endif
+
     #include "filedlg.h"
     #include "dialog.h"
     #define INCL_ARROWS
@@ -58,22 +64,18 @@
  *  Procedure declarations                                                  *
  ****************************************************************************/
     /* Open file dialog box procedures */
-    MRESULT EXPENTRY _OpenDlgProc( HWND hwnd,USHORT msg,MPARAM mp1,MPARAM mp2 );
-    static MRESULT NEAR OpenInit( HWND hwnd,MPARAM mp2 );
-    static MRESULT NEAR DriveListbox( HWND hwnd,USHORT msg,
-                                      MPARAM mp1,MPARAM mp2 );
-    static MRESULT NEAR DirListbox( HWND hwnd,USHORT msg,
-                                    MPARAM mp1,MPARAM mp2 );
-    static MRESULT NEAR FileListbox( HWND hwnd,USHORT msg,
-                                     MPARAM mp1,MPARAM mp2 );
-    static MRESULT NEAR FnameEditCtrl( HWND hwnd,USHORT msg,
-                                       MPARAM mp1,MPARAM mp2 );
-    static MRESULT NEAR OpenButton( HWND hwnd,PDATA pData );
-    static VOID NEAR FillListBoxes( HWND hDlg,PDATA pData,BOOL fError );
-    static USHORT NEAR OpenFile( HWND hDlg,PDATA pData );
+    MRESULT EXPENTRY _OpenDlgProc( HWND hwnd,ULONG msg,MPARAM mp1,MPARAM mp2 );
+    static MRESULT OpenInit( HWND hwnd,MPARAM mp2 );
+    static MRESULT DriveListbox( HWND hwnd,ULONG msg,MPARAM mp1,MPARAM mp2 );
+    static MRESULT DirListbox( HWND hwnd,ULONG msg,MPARAM mp1,MPARAM mp2 );
+    static MRESULT FileListbox( HWND hwnd,ULONG msg,MPARAM mp1,MPARAM mp2 );
+    static MRESULT FnameEditCtrl( HWND hwnd,ULONG msg,MPARAM mp1,MPARAM mp2 );
+    static MRESULT OpenButton( HWND hwnd,PDATA pData );
+    static VOID FillListBoxes( HWND hDlg,PDATA pData,BOOL fError );
+    static USHORT OpenFile( HWND hDlg,PDATA pData );
 
     /* Find file dialog box procedures */
-    extern MRESULT EXPENTRY _FindDlgProc( HWND hwnd,USHORT msg,
+    extern MRESULT EXPENTRY _FindDlgProc( HWND hwnd,ULONG msg,
                                           MPARAM mp1,MPARAM mp2 );
 /****************************************************************************/
 
@@ -94,8 +96,8 @@
                                  USHORT fsOpenMode,
                                  ULONG ulReserved )
     {
+        ULONG   ulMaxPathLen;
         USHORT  usMaxPathLen;
-        SEL     sel;
         PDATA   pData;
         USHORT  rc;
         HMODULE hmod = 0;
@@ -108,13 +110,15 @@
         if ( pszIns == NULL ) pszIns = szDefOpenIns;
 
     /* Get maximum pathname length */
-        DosQSysInfo( 0,(PBYTE)&usMaxPathLen,sizeof(USHORT) );
+        DosQuerySysInfo( QSV_MAX_PATH_LENGTH,QSV_MAX_PATH_LENGTH,
+                         (PBYTE)&ulMaxPathLen,sizeof(ULONG) );
+        usMaxPathLen = (USHORT)ulMaxPathLen;
 
     /* Get module handle for FILEDLG dynamic-link library
      *  Note: Remove this code section if the file dialog box
      *        resources are not located in a dynamic-link library.
      */
-        if ( (rc = DosGetModHandle(szDLLName,&hmod)) )
+        if ( (rc = (USHORT)DosQueryModuleHandle(szDLLName,&hmod)) )
             {
             ErrMessageBox( hwndOwner,pszTitle,rc,NULL,0 );
             rc = FDLG_CANCEL;
@@ -122,47 +126,46 @@
             }
 
     /* Allocate memory for dialog data */
-        if ( (rc = DosAllocSeg(sizeof(DATA),&sel,SEG_NONSHARED)) )
+        if ( (rc = (USHORT)DosAllocMem((PPVOID)&pData,sizeof(DATA),
+                                        PAG_COMMIT|PAG_READ|PAG_WRITE)) )
             {
             ErrMessageBox( hwndOwner,pszTitle,rc,NULL,0 );
             rc = FDLG_CANCEL;
             goto EXIT;
             }
-        pData = MAKEP(sel,0);
 
     /* Allocate memory for search spec */
-        if ( (rc = DosAllocSeg(usMaxPathLen,&sel,SEG_NONSHARED)) )
+        if ( (rc = (USHORT)DosAllocMem((PPVOID)&pData->pszShowSpec,usMaxPathLen,
+                                        PAG_COMMIT|PAG_READ|PAG_WRITE)) )
             {
-            DosFreeSeg( SELECTOROF(pData) );
+            DosFreeMem( pData );
             ErrMessageBox( hwndOwner,pszTitle,rc,NULL,0 );
             rc = FDLG_CANCEL;
             goto EXIT;
             }
-        pData->pszShowSpec = MAKEP(sel,0);
 
     /* Allocate scratch data area */
-        if ( (rc = DosAllocSeg(usMaxPathLen+3,&sel,SEG_NONSHARED)) )
+        if ( (rc = (USHORT)DosAllocMem((PPVOID)&pData->pszScratch,usMaxPathLen+3,
+                                        PAG_COMMIT|PAG_READ|PAG_WRITE)) )
             {
-            DosFreeSeg( SELECTOROF(pData->pszShowSpec) );
-            DosFreeSeg( SELECTOROF(pData) );
+            DosFreeMem( pData->pszShowSpec );
+            DosFreeMem( pData );
             ErrMessageBox( hwndOwner,pszTitle,rc,NULL,0 );
             rc = FDLG_CANCEL;
             goto EXIT;
             }
-        pData->pszScratch = MAKEP(sel,0);
 
     /* Allocate storage for current directory string */
-        if ( (rc = DosAllocSeg(usMaxPathLen+3,&sel,SEG_NONSHARED)) )
+        if ( (rc = (USHORT)DosAllocMem((PPVOID)&pData->pszCurDir,usMaxPathLen+3,
+                                        PAG_COMMIT|PAG_READ|PAG_WRITE)) )
             {
-            DosFreeSeg( SELECTOROF(pData->pszShowSpec) );
-            DosFreeSeg( SELECTOROF(pData->pszScratch) );
-            DosFreeSeg( SELECTOROF(pData) );
+            DosFreeMem( pData->pszShowSpec );
+            DosFreeMem( pData->pszScratch );
+            DosFreeMem( pData );
             ErrMessageBox( hwndOwner,pszTitle,rc,NULL,0 );
             rc = FDLG_CANCEL;
             goto EXIT;
             }
-        pData->pszCurDir = MAKEP(sel,0);
-
     /* Set current drive and directory to drive and directory listed   */
     /* in show file specification, and store filename portion of spec. */
         strcpy( pData->pszShowSpec,pszShowSpec );
@@ -211,9 +214,10 @@
         GpiDeleteBitmap( pData->hbmRight );
         GpiDeleteBitmap( pData->hbmRightPressed );
         GpiDeleteBitmap( pData->hbmRightDisabled );
-        DosFreeSeg( SELECTOROF(pData->pszShowSpec) );
-        DosFreeSeg( SELECTOROF(pData->pszScratch) );
-        DosFreeSeg( SELECTOROF(pData) );
+        DosFreeMem( pData->pszCurDir );
+        DosFreeMem( pData->pszShowSpec );
+        DosFreeMem( pData->pszScratch );
+        DosFreeMem( pData );
 
     /* Re-enable hard error processing and return */
 EXIT:   DosError( HARDERROR_ENABLE );
@@ -225,7 +229,7 @@ EXIT:   DosError( HARDERROR_ENABLE );
 /****************************************************************************
  * _OpenDlgProc()                                                           *
  ****************************************************************************/
-    MRESULT EXPENTRY _OpenDlgProc( HWND hwnd,USHORT msg,MPARAM mp1,MPARAM mp2 )
+    MRESULT EXPENTRY _OpenDlgProc( HWND hwnd,ULONG msg,MPARAM mp1,MPARAM mp2 )
     {
         PDATA   pData;
 
@@ -330,7 +334,7 @@ EXIT:   DosError( HARDERROR_ENABLE );
  * OpenInit() -- Process WM_INITDLG message for the open file dialog        *
  *               box.                                                       *
  ****************************************************************************/
-    static MRESULT near OpenInit( HWND hwnd,MPARAM mp2 )
+    static MRESULT OpenInit( HWND hwnd,MPARAM mp2 )
     {
         PDATA pData;
 
@@ -352,11 +356,10 @@ EXIT:   DosError( HARDERROR_ENABLE );
  * DriveListbox() -- Handle messages sent by the disk drive list box to     *
  *                   the open file dialog.                                  *
  ****************************************************************************/
-    static MRESULT near DriveListbox( HWND hwnd,USHORT msg,
-                                      MPARAM mp1,MPARAM mp2 )
+    static MRESULT DriveListbox( HWND hwnd,ULONG msg,MPARAM mp1,MPARAM mp2 )
     {
         PDATA   pData;
-        USHORT  usResult;
+        SHORT   usResult;
 
         pData = (PDATA)WinQueryWindowULong( hwnd,QWL_USER );
         switch ( SHORT2FROMMP(mp1) ) {
@@ -365,7 +368,7 @@ EXIT:   DosError( HARDERROR_ENABLE );
                 WinSendDlgItemMsg( hwnd,OPEN_DRIVES,LM_QUERYITEMTEXT,
                                    MPFROM2SHORT(pData->usSelectDrive,pData->usMaxPathLen),
                                    MPFROMP(pData->pszScratch) );
-                usResult = DosSelectDisk(pData->pszScratch[0]-'@');
+                usResult = (USHORT)DosSetDefaultDisk(pData->pszScratch[0]-'@');
                 if ( usResult )
                     ErrMessageBox( hwnd,pData->pszTitle,usResult,NULL,0 );
                 else
@@ -417,11 +420,10 @@ EXIT:   DosError( HARDERROR_ENABLE );
  * DirListbox() -- Handle messages sent by directory list box to the        *
  *                 open file dialog.                                        *
  ****************************************************************************/
-    static MRESULT near DirListbox( HWND hwnd,USHORT msg,
-                                    MPARAM mp1,MPARAM mp2 )
+    static MRESULT DirListbox( HWND hwnd,ULONG msg,MPARAM mp1,MPARAM mp2 )
     {
         PDATA  pData;
-        USHORT usResult;
+        SHORT  usResult;
 
         pData = (PDATA)WinQueryWindowULong( hwnd,QWL_USER );
         switch ( SHORT2FROMMP(mp1) ) {
@@ -431,7 +433,7 @@ EXIT:   DosError( HARDERROR_ENABLE );
                                    LM_QUERYITEMTEXT,
                                    MPFROM2SHORT(pData->usSelectDir,pData->usMaxPathLen),
                                    MPFROMP(pData->pszScratch) );
-                usResult = DosChDir(pData->pszScratch,0L);
+                usResult = (USHORT)DosSetCurrentDir(pData->pszScratch);
                 if ( usResult )
                     ErrMessageBox( hwnd,pData->pszTitle,usResult,NULL,0 );
                 else
@@ -482,11 +484,10 @@ EXIT:   DosError( HARDERROR_ENABLE );
 /****************************************************************************
  * FileListbox() -- Handle messages sent by file list box the open dialog.  *
  ****************************************************************************/
-    static MRESULT near FileListbox( HWND hwnd,USHORT msg,
-                                     MPARAM mp1,MPARAM mp2 )
+    static MRESULT FileListbox( HWND hwnd,ULONG msg,MPARAM mp1,MPARAM mp2 )
     {
         PDATA  pData;
-        USHORT usResult;
+        SHORT  usResult;
 
         pData = (PDATA)WinQueryWindowULong( hwnd,QWL_USER );
         switch ( SHORT2FROMMP(mp1) ) {
@@ -548,8 +549,7 @@ EXIT:   DosError( HARDERROR_ENABLE );
  * FnameEditCtrl() -- Handles messages sent by OPEN_FNAME edit control      *
  *                    to open file dialog box.                              *
  ****************************************************************************/
-    static MRESULT near FnameEditCtrl( HWND hwnd,USHORT msg,
-                                       MPARAM mp1,MPARAM mp2 )
+    static MRESULT FnameEditCtrl( HWND hwnd,ULONG msg,MPARAM mp1,MPARAM mp2 )
     {
         USHORT usResult;
         PDATA  pData;
@@ -572,16 +572,15 @@ EXIT:   DosError( HARDERROR_ENABLE );
 /****************************************************************************
  * OpenButton() - Procedure to executed when OPEN button is clicked.        *
  ****************************************************************************/
-    static MRESULT near OpenButton( HWND hwnd,PDATA pData )
+    static MRESULT OpenButton( HWND hwnd,PDATA pData )
     {
-        USHORT      usDriveNum;
+        ULONG       usDriveNum;
         ULONG       ulMap;
-        USHORT      usCount;
         HWND        hwndButton;
 
         hwndButton = WinWindowFromID( hwnd,OPEN_OK );
 
-        if ( hwndButton == WinQueryFocus(HWND_DESKTOP,FALSE) )
+        if ( hwndButton == WinQueryFocus(HWND_DESKTOP) )
             {
             switch ( pData->usFocus ) {
                 case OPEN_FNAME:
@@ -591,13 +590,14 @@ EXIT:   DosError( HARDERROR_ENABLE );
                                          pData->pszScratch );
                     if ( OpenFile(hwnd,pData) )
                         {
-                        DosQCurDisk( &usDriveNum,&ulMap );
+                        ULONG cbDir;
+                        DosQueryCurrentDisk( &usDriveNum,&ulMap );
                         pData->pszScratch[0] = (CHAR)( usDriveNum + '@' );
                         pData->pszScratch[1] = ':';
                         pData->pszScratch[2] = '\\';
                         pData->pszScratch[3] = 0;
-                        usCount = pData->usMaxPathLen-3;
-                        DosQCurDir(0,pData->pszScratch+3,&usCount);
+                        cbDir = pData->usMaxPathLen-3;
+                        DosQueryCurrentDir(0,(PBYTE)pData->pszScratch+3,&cbDir);
                         if ( 0 != stricmp(pData->pszScratch,pData->pszCurDir) )
                             FillListBoxes( hwnd,pData,FALSE );
                         }
@@ -626,14 +626,14 @@ EXIT:   DosError( HARDERROR_ENABLE );
  *                                                                          *
  *                   This function uses the scratch data area.              *
  ****************************************************************************/
-    static void near FillListBoxes( HWND hDlg,PDATA pData,BOOL fError )
+    static void FillListBoxes( HWND hDlg,PDATA pData,BOOL fError )
     {
-        USHORT      usDriveNum;
+        ULONG       usDriveNum;
         ULONG       ulMap;
         USHORT      usResult;
         HDIR        hdir;
-        FILEFINDBUF findbuf;
-        USHORT      usCount;
+        FILEFINDBUF3 findbuf;
+        ULONG       usCount;
 
     /* Clear current contents of list boxes and text controls */
         WinSendDlgItemMsg( hDlg,OPEN_DRIVES,LM_DELETEALL,NULL,NULL );
@@ -649,7 +649,7 @@ EXIT:   DosError( HARDERROR_ENABLE );
         pData->iFirstChar    = 0;
 
     /* Fill in disk drive list box */
-        if ( usResult = DosQCurDisk(&usDriveNum,&ulMap) )
+        if ( usResult = (USHORT)DosQueryCurrentDisk(&usDriveNum,&ulMap) )
             {
             if ( fError ) ErrMessageBox( hDlg,pData->pszTitle,usResult,NULL,0 );
             return;
@@ -684,7 +684,7 @@ EXIT:   DosError( HARDERROR_ENABLE );
         pData->pszCurDir[2] = '\\';
         pData->pszCurDir[3] = 0;
         usCount = pData->usMaxPathLen-3;
-        usResult = DosQCurDir(0,pData->pszCurDir+3,&usCount);
+        usResult = (USHORT)DosQueryCurrentDir(0,(PBYTE)pData->pszCurDir+3,&usCount);
         WinSetDlgItemText( hDlg,OPEN_CURDIR,pData->pszCurDir );
         if ( usResult )
             {
@@ -695,8 +695,9 @@ EXIT:   DosError( HARDERROR_ENABLE );
     /* Fill list box with subdirectories of current directory */
         hdir    = HDIR_CREATE;
         usCount = 1;
-        usResult = DosFindFirst( szStarDotStar,&hdir,FILE_DIRECTORY,&findbuf,
-                                  sizeof(findbuf),&usCount,0L );
+        usResult = (USHORT)DosFindFirst( szStarDotStar,&hdir,FILE_DIRECTORY,
+                                         &findbuf,sizeof(findbuf),
+                                         &usCount,FIL_STANDARD );
 
         while ( !usResult )
             {
@@ -710,7 +711,7 @@ EXIT:   DosError( HARDERROR_ENABLE );
                                    MPFROMSHORT(LIT_END),
                                    MPFROMP(findbuf.achName) );
                 }
-            usResult = DosFindNext( hdir,&findbuf,sizeof(findbuf),&usCount );
+            usResult = (USHORT)DosFindNext( hdir,&findbuf,sizeof(findbuf),&usCount );
             }
 
         if ( usResult != ERROR_NO_MORE_SEARCH_HANDLES ) DosFindClose(hdir);
@@ -723,9 +724,9 @@ EXIT:   DosError( HARDERROR_ENABLE );
     /* Fill file list box with list of files that match search specs. */
         hdir    = HDIR_CREATE;
         usCount = 1;
-        usResult = DosFindFirst( pData->pszShowSpec,&hdir,
-                                 pData->usShowAttr,&findbuf,
-                                 sizeof(findbuf),&usCount,0L );
+        usResult = (USHORT)DosFindFirst( pData->pszShowSpec,&hdir,
+                                         pData->usShowAttr,&findbuf,
+                                         sizeof(findbuf),&usCount,FIL_STANDARD );
 
         while ( !usResult )
             {
@@ -733,7 +734,7 @@ EXIT:   DosError( HARDERROR_ENABLE );
                                MPFROMSHORT(LIT_END),
                                MPFROMP(findbuf.achName) );
 
-            usResult = DosFindNext( hdir,&findbuf,sizeof(findbuf),&usCount );
+            usResult = (USHORT)DosFindNext( hdir,&findbuf,sizeof(findbuf),&usCount );
             }
 
         if ( usResult != ERROR_NO_MORE_SEARCH_HANDLES ) DosFindClose(hdir);
@@ -754,9 +755,10 @@ EXIT:   DosError( HARDERROR_ENABLE );
  *              This function returns a non-zero value if an error occured  *
  *              or the input string was a search specification.             *
  ****************************************************************************/
-    static USHORT near OpenFile( HWND hDlg,PDATA pData )
+    static USHORT OpenFile( HWND hDlg,PDATA pData )
     {
         USHORT  usResult;
+        ULONG   ulAction;
 
         usResult = ParseFileName( pData->pszScratch,
                                   pData->pszFile,
@@ -775,21 +777,24 @@ EXIT:   DosError( HARDERROR_ENABLE );
             }
         else
             {
-            usResult = DosOpen( pData->pszFile,
+            usResult = (USHORT)DosOpen( pData->pszFile,
                                 pData->phf,
-                                pData->pusAction,
+                                &ulAction,
                                 pData->ulFileSize,
                                 pData->usAttribute,
                                 pData->fsOpenFlags,
                                 pData->fsOpenMode,
-                                pData->ulReserved );
+                                (PEAOP2)NULL );
             if ( usResult )
                 {
                 ErrMessageBox( hDlg,pData->pszTitle,usResult,NULL,0 );
                 return 1;
                 }
             else
+                {
+                *pData->pusAction = (USHORT)ulAction;
                 return 0;
+                }
             }
     }
 /****************************************************************************/

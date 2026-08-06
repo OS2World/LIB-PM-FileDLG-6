@@ -24,7 +24,7 @@
         PSZ     pszMsg;         // ptr to error message text
         } ERRORMSG;
 
-    typedef ERRORMSG FAR * PERRORMSG;
+    typedef ERRORMSG * PERRORMSG;
 
 /****************************************************************************\
 flStyle     Specifies the type of message-box window created. This parameter
@@ -107,12 +107,12 @@ flStyle     Specifies the type of message-box window created. This parameter
 
 
 /****************************************************************************/
-extern USHORT cdecl far _loadds _export ErrMessageBox( HWND hwndOwner,
-                                                       PSZ pszCaption,
-                                                       USHORT usErrorCode,
-                                                       PERRORMSG perrormsg,
-                                                       USHORT cErrMsgCnt,
-                                                       ... );
+extern USHORT EXPENTRY ErrMessageBox( HWND hwndOwner,
+                                      PSZ pszCaption,
+                                      USHORT usErrorCode,
+                                      PERRORMSG perrormsg,
+                                      USHORT cErrMsgCnt,
+                                      ... );
 /****************************************************************************\
 The ErrMessageBox function creates, displays, and operates a message-box
 window that displays the error message associated with a given error

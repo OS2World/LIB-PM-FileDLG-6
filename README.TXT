@@ -1,22 +1,50 @@
-Following is a list of the files included in this ZIP archive.
+LIB-PM-FileDLG-6  Version 6.1
+==============================
 
-    readme.doc  ... This file.
-    changes.doc ... List of changes made from the previous version.
-    filedlg.lib ... Import library for file dialog functions.
-    filedlg.dll ... Dynamic link library containing file dialog functions.
-    filedlg.h   ... Header file containing function declarations.
-    filedlg.hlp ... Help file used by Microsoft QuickHelp program.
-    errmsg.lib  ... Import library for error handler.
-    errmsg.dll  ... Dynamic link library containing error handler.
-    errmsg.h    ... Header file containing error handler function declaration.
-    errmsg.hlp  ... Help file used by Microsoft QuickHelp program.
-    source.zip  ... Source code.
-    sample.zip  ... Sample programs.
-    errmsg.zip  ... Source code to error handler.
+Following is a list of the main files in this distribution.
 
-Note that for the file dialog functions to work, *both* the FILEDLG.DLL
-and ERRMSG.DLL dynamic link libraries must be located in a directory that
-is listed in the LIBPATH.
+    README.TXT    ... This file.
+    CHANGES.TXT   ... List of changes made from the previous version.
+    README.md     ... Project overview and build instructions (Markdown).
+    Makefile.wat  ... Open Watcom 2.0 build file for both DLLs.
+
+    dll\
+      FILEDLG.DLL ... Dynamic link library containing file dialog functions.
+      ERRMSG.DLL  ... Dynamic link library containing error handler.
+
+    lib\
+      FILEDLG.LIB ... Import library for FILEDLG.DLL.
+      ERRMSG.LIB  ... Import library for ERRMSG.DLL.
+
+    h\
+      FILEDLG.H   ... Header file with FileOpenDlg / FileSaveDlg declarations.
+      ERRMSG.H    ... Header file with ErrMessageBox declaration.
+
+    doc\
+      FILEDLG.HLP ... QuickHelp reference for file dialog functions.
+      ERRMSG.HLP  ... QuickHelp reference for error handler.
+
+    sample\
+      OPENTEST.C  ... Sample program for FileOpenDlg.
+      SAVETEST.C  ... Sample program for FileSaveDlg.
+      Makefile.wat... Open Watcom 2.0 build file for samples.
+
+    src\          ... Full source code for both DLLs.
+
+Note that for the file dialog functions to work, *both* FILEDLG.DLL
+and ERRMSG.DLL must be located in a directory listed in the LIBPATH
+(e.g. copy them to C:\OS2\DLL).
+
+---------------------------------------------------------------------------
+Version 6.1 (2026) -- 32-bit OS/2 port
+
+This version ports the original 16-bit library to 32-bit OS/2 (flat model),
+buildable with Open Watcom 2.0 on ArcaOS / OS/2 Warp.  All 16-bit APIs have
+been replaced with their 32-bit equivalents; the build produces zero errors
+and zero warnings.  See CHANGES.TXT for the full list of changes.
+
+---------------------------------------------------------------------------
+Original version 6.0 (1990) -- Rick Yoder
 
 This software is user-supported software and may be freely
 copied and used by anyone who wishes to do so as long as the
@@ -33,15 +61,3 @@ following conditions are met:
 3.   If you make any modifications to these functions you
      must change the name of the dynamic link library files
      FILEDLG.DLL and ERRMSG.DLL to some other name.
-
-If you feel that this program has benefited you, please
-register it by sending $25.00 to:
-
-     Rick Yoder
-     8790 Rosewood Lane
-     Indianapolis, IN  46240
-
-     phone: 317-846-8034 (after 5:00PM EST)
-
-Technical support is available via Compuserve (ID 73457,521) and
-BIX (ID ryoder) for registered users.
